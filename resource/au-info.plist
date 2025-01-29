@@ -14,11 +14,11 @@
 			<key>name</key>
 			<string>yg331: Generic EQ</string>
 			<key>subtype</key>
-			<string>yREQ</string>
+			<string>GNRC</string>
 			<key>type</key>
 			<string>aufx</string>
 			<key>version</key>
-			<integer>65799</integer>
+			<integer>65536</integer>
 		</dict>
 	</array>
 	<key>AudioUnit SupportedNumChannels</key>
