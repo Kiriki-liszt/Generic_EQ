@@ -61,8 +61,8 @@ smtg_target_add_plugin_resources(${target}
 
 smtg_target_add_plugin_snapshots (${target}
     RESOURCES
-        resource/EB8EA8E4ADF058F5A94A0C179DFE6C8D_snapshot.png
-        resource/EB8EA8E4ADF058F5A94A0C179DFE6C8D_snapshot_2.0x.png
+        resource/BE9ACDC3EA6D5D86A6A76A31FAEED6B4_snapshot.png
+        resource/BE9ACDC3EA6D5D86A6A76A31FAEED6B4_snapshot_2.0x.png
 )
 
 target_compile_features(${target}

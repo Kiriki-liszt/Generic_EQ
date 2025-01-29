@@ -9,8 +9,8 @@
 
 namespace yg331 {
 //------------------------------------------------------------------------
-static const Steinberg::FUID kGNRC_EQ_ProcessorUID (0xEB8EA8E4, 0xADF058F5, 0xA94A0C17, 0x9DFE6C8D);
-static const Steinberg::FUID kGNRC_EQ_ControllerUID (0x7F073B47, 0x0EFA53C7, 0xBFCE3213, 0xC8E59E95);
+static const Steinberg::FUID kgenProcessorUID (0xBE9ACDC3, 0xEA6D5D86, 0xA6A76A31, 0xFAEED6B4);
+static const Steinberg::FUID kgenControllerUID (0xE7DEC59C, 0x391E5034, 0x8FBCFD6A, 0x175F9AD6);
 
 #define GNRC_EQ_VST3Category "Fx|EQ"
 
