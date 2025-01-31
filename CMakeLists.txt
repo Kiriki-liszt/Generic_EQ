@@ -33,6 +33,7 @@ endif()
 
 set(target Generic_EQ)
 set(target-au Generic_EQ-au)
+set(bundleID Generic.EQ)
 
 set(SMTG_VSTGUI_ROOT "${vst3sdk_SOURCE_DIR}")
 
@@ -80,7 +81,7 @@ smtg_target_configure_version_file(${target})
 
 if(SMTG_MAC)
     smtg_target_set_bundle(${target}
-        BUNDLE_IDENTIFIER "io.github.yg331.${target}"
+        BUNDLE_IDENTIFIER "io.github.yg331.${bundleID}"
         COMPANY_NAME "yg331"
     )
     smtg_target_set_debug_executable(${target}
@@ -109,7 +110,7 @@ if (SMTG_MAC AND XCODE AND SMTG_ENABLE_AUV2_BUILDS)
     include(SMTG_AddVST3AuV2) 
 	smtg_target_add_auv2(${target-au}
 		BUNDLE_NAME ${target}
-		BUNDLE_IDENTIFIER io.github.yg331.JS.Inflator.audiounit
+		BUNDLE_IDENTIFIER io.github.yg331.${bundleID}.audiounit
 		INFO_PLIST_TEMPLATE resource/au-info.plist
 		VST3_PLUGIN_TARGET ${target})
 endif(SMTG_MAC AND XCODE AND SMTG_ENABLE_AUV2_BUILDS)

@@ -7,87 +7,14 @@
 #include "GNRC_EQ_shared.h"
 #include "GNRC_EQ_fft.h"
 
+#include <array>
+
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include "vstgui/plugin-bindings/vst3editor.h"
 #include "vstgui/uidescription/delegationcontroller.h"
 #include "vstgui/lib/controls/cknob.h"
 
-
 namespace VSTGUI {
-//------------------------------------------------------------------------
-//  TextEdit + Knob mouse control
-//------------------------------------------------------------------------
-class MyKnobText : public CTextEdit, protected CMouseWheelEditingSupport {
-public:
-    
-    MyKnobText(const CRect& size, IControlListener* listener, int32_t tag, UTF8StringPtr txt, CBitmap* background = nullptr, const int32_t style = 0 );
-    MyKnobText(const MyKnobText& v);
-
-    virtual void  setMinPlain(float val)     { minPlain = val; }
-    virtual float getMinPlain() const        { return minPlain; }
-    virtual void  setMaxPlain(float val)     { maxPlain = val; }
-    virtual float getMaxPlain() const        { return maxPlain; }
-    int32_t       getLogScale() const        { return logScale; }
-    virtual void  setLogScale(int32_t style) { if (style != logScale) { logScale = style; setDirty(); } };
-
-    //-----------------------------------------------------------------------------
-    /// @name CKnobBase Methods
-    //-----------------------------------------------------------------------------
-    //@{
-    virtual void  valueToPoint  (CPoint& point) const;
-    virtual float valueFromPoint(CPoint& point) const;
-
-    virtual void  setStartAngle(float val) { startAngle = val; compute(); };
-    virtual float getStartAngle() const    { return startAngle; }
-
-    virtual void  setRangeAngle(float val) { rangeAngle = val; compute(); };
-    virtual float getRangeAngle() const    { return rangeAngle; }
-
-    virtual void  setZoomFactor(float val) { zoomFactor = val; }
-    virtual float getZoomFactor() const    { return zoomFactor; }
-
-    virtual CCoord getInsetValue() const   { return inset; }
-    virtual void   setInsetValue(CCoord val) { inset = val; }
-    //@}
-
-    //-----------------------------------------------------------------------------
-    // overrides
-    //-----------------------------------------------------------------------------
-    void setText          (const UTF8String& txt)  override;
-    void onMouseWheelEvent(MouseWheelEvent& event) override;
-    void onKeyboardEvent  (KeyboardEvent& event)   override ;
-    void setViewSize      (const CRect& rect, bool invalid = true) override ;
-    bool sizeToFit        () override;
-    void setMin(float val) override { CControl::setMin(val); if (getValue() < val) { setValue(val); } compute(); };
-    void setMax(float val) override { CControl::setMax(val); if (getValue() > val) { setValue(val); } compute(); };
-
-    CMouseEventResult onMouseDown  (CPoint& where, const CButtonState& buttons) override;
-    CMouseEventResult onMouseUp    (CPoint& where, const CButtonState& buttons) override;
-    CMouseEventResult onMouseMoved (CPoint& where, const CButtonState& buttons) override;
-    CMouseEventResult onMouseCancel() override;
-
-    CLASS_METHODS(MyKnobText, CTextEdit)
-
-protected:
-    ~MyKnobText() noexcept override {};
-
-    void compute() {
-        setDirty();
-    };
-
-    float startAngle, rangeAngle;
-    float zoomFactor;
-    float minPlain, maxPlain;
-    int32_t logScale;
-    CCoord inset;
-
-private:
-    struct MouseEditingState;
-
-    MouseEditingState& getMouseEditingState();
-    void clearMouseEditingState();
-};
-
 //------------------------------------------------------------------------
 // EQ Curve Display
 //------------------------------------------------------------------------
@@ -153,28 +80,19 @@ protected:
     CColor  FFTLineColor;
     CColor  FFTFillColor;
     
-    yg331::ParamBand_Array band1 = {1.0, yg331::dftBand1Freq, yg331::dftParamQlty, yg331::dftParamGain, yg331::nrmParamType, yg331::nrmParamOrdr};
-    yg331::ParamBand_Array band2 = {1.0, yg331::dftBand2Freq, yg331::dftParamQlty, yg331::dftParamGain, yg331::nrmParamType, yg331::nrmParamOrdr};
-    yg331::ParamBand_Array band3 = {1.0, yg331::dftBand3Freq, yg331::dftParamQlty, yg331::dftParamGain, yg331::nrmParamType, yg331::nrmParamOrdr};
-    yg331::ParamBand_Array band4 = {1.0, yg331::dftBand4Freq, yg331::dftParamQlty, yg331::dftParamGain, yg331::nrmParamType, yg331::nrmParamOrdr};
-    yg331::ParamBand_Array band5 = {1.0, yg331::dftBand5Freq, yg331::dftParamQlty, yg331::dftParamGain, yg331::nrmParamType, yg331::nrmParamOrdr};
-
-    yg331::SVF     band1_svf;
-    yg331::SVF     band2_svf;
-    yg331::SVF     band3_svf;
-    yg331::SVF     band4_svf;
-    yg331::SVF     band5_svf;
+    yg331::bandParamSet band[yg331::numBands];
+    
+    yg331::SVF_Generic  svf[yg331::numBands];
 
     bool    byPass = false;
     double  level = 0.0;
-    double  EQ_SR = 96000.0;
+    double  EQ_SR = 48000.0;
 
     float fft_linear[yg331::numBins] = { 0.0, };
     float fft_RMS[yg331::numBins]    = { 0.0, };
     float fft_freq[yg331::numBins]   = { 0.0, };
 };
 }
-
 
 namespace yg331 {
 
@@ -274,7 +192,7 @@ public:
     VSTGUI::IController* createSubController (VSTGUI::UTF8StringPtr name,
                                               const VSTGUI::IUIDescription* description,
                                               VSTGUI::VST3Editor* editor) SMTG_OVERRIDE;
-
+    
     //---Internal functions-------
     void addEQCurveViewController(EQCurveViewController* controller)
     {
@@ -286,11 +204,12 @@ public:
         if (it != curveControllers.end())
             curveControllers.erase(it);
     };
-
+    
     //---Interface---------
     DEFINE_INTERFACES
         // Here you can add more supported VST3 interfaces
         // DEF_INTERFACE (Vst::IXXX)
+        DEF_INTERFACE (Steinberg::Vst::IUnitInfo)
     END_DEFINE_INTERFACES (EditController)
     DELEGATE_REFCOUNT (EditController)
 
@@ -306,34 +225,32 @@ protected:
     using UICurveControllerList = std::vector<EQCurveViewController*>;
     UICurveControllerList curveControllers;
 
-    Steinberg::tchar* Filter_Types[SVF::tNum + 1] = {
-        (Steinberg::tchar*)STR("Bell"),
-        (Steinberg::tchar*)STR("Low Shelf"),
-        (Steinberg::tchar*)STR("High Shelf"),
-        (Steinberg::tchar*)STR("L Shelf 12"),
-        (Steinberg::tchar*)STR("H Shelf 12"),
-        (Steinberg::tchar*)STR("Low Pass"),
-        (Steinberg::tchar*)STR("High Pass")
-    };
-
-    Steinberg::tchar* Filter_Order[SVF::oNum + 1] = {
-        (Steinberg::tchar*)STR("6"),
-        (Steinberg::tchar*)STR("12"),
-        (Steinberg::tchar*)STR("18"),
-        (Steinberg::tchar*)STR("24")
-    };
-
     TBool      pBypass = false;
     ParamValue fLevel  = 0.5;
-    ParamValue fOutput = 0.0;
     ParamValue fZoom   = 2.0 / 6.0;
-    int32      fParamOS = overSample_2x;
     
-    ParamBand_Array fParamBand1_Array = {1.0, nrmBand1Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array fParamBand2_Array = {1.0, nrmBand2Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array fParamBand3_Array = {1.0, nrmBand3Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array fParamBand4_Array = {1.0, nrmBand4Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array fParamBand5_Array = {1.0, nrmBand5Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
+    std::array<std::array<double, bandSize>, numBands> pBand = {{
+        {dftParamUsed, nrmParamType, dftBand01Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand02Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand03Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand04Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand05Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand06Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand07Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand08Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand09Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand10Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand11Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand12Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand13Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand14Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand15Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand16Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand17Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand18Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand19Freq, dftParamGain, dftParamQlty},
+        {dftParamUsed, nrmParamType, dftBand20Freq, dftParamGain, dftParamQlty}
+    }};
     
     SampleRate projectSR = 48000.0;
     SampleRate targetSR = 96000.0;
@@ -382,14 +299,13 @@ public:
     
     void setEQsampleRate(double SR) {eqCurveView->setEQsampleRate(SR);}
     
-    void addBandParam(Parameter* pIn, Parameter* pHz, Parameter* pQ, Parameter* pdB, Parameter* pType, Parameter* pOrder)
+    void addBandParam(Parameter* pIn, Parameter* pType, Parameter* pHz, Parameter* pdB, Parameter* pQ)
     {
         if (pIn)    { pBand.push_back(pIn);    pIn->addDependent(this); }
         if (pHz)    { pBand.push_back(pHz);    pHz->addDependent(this); }
         if (pQ)     { pBand.push_back(pQ);     pQ ->addDependent(this); }
         if (pdB)    { pBand.push_back(pdB);    pdB->addDependent(this); }
         if (pType)  { pBand.push_back(pType);  pType->addDependent(this); }
-        if (pOrder) { pBand.push_back(pOrder); pOrder->addDependent(this); }
     }
     void addLevelParam(Parameter* p)
     {

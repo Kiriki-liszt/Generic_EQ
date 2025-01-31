@@ -15,372 +15,6 @@
 using namespace Steinberg;
 
 namespace VSTGUI {
-//------------------------------------------------------------------------
-//  TextEdit with Knob mouse control
-//------------------------------------------------------------------------
-static constexpr CViewAttributeID kCKnobTextMouseStateAttribute = 'ktms';
-static const std::string kAttrMinPlain = "min-plain";
-static const std::string kAttrMaxPlain = "max-plain";
-static const std::string kAttrLogScale = "Log-Scale";
-//------------------------------------------------------------------------
-
-static const float kCKnobTextRange = 200.f;
-
-struct MyKnobText::MouseEditingState
-{
-    CPoint firstPoint;
-    CPoint lastPoint;
-    float startValue;
-    float entryState;
-    float range;
-    float coef;
-    CButtonState oldButton;
-    bool modeLinear;
-};
-MyKnobText::MyKnobText(
-    const CRect& size,
-    IControlListener* listener,
-    int32_t tag,
-    UTF8StringPtr txt,
-    CBitmap* background,
-    const int32_t style
-)
-    : CTextEdit(size, listener, tag, txt, background)
-{
-    rangeAngle = 1.f;
-    setStartAngle((float)(3.f * Constants::quarter_pi));
-    setRangeAngle((float)(3.f * Constants::half_pi));
-    zoomFactor = 1.5f;
-    minPlain = 20.0;
-    maxPlain = 22000.0;
-    logScale = false;
-}
-
-MyKnobText::MyKnobText(const MyKnobText& v)
-    : CTextEdit(v)
-    , startAngle(v.startAngle)
-    , rangeAngle(v.rangeAngle)
-    , zoomFactor(v.zoomFactor)
-    , inset(v.inset)
-    , minPlain(v.minPlain)
-    , maxPlain(v.maxPlain)
-    , logScale(v.logScale)
-{
-}
-
-void  MyKnobText::valueToPoint(CPoint& point) const {
-    float alpha = (value - getMin()) / (getMax() - getMin());
-    alpha = startAngle + alpha * rangeAngle;
-
-    CPoint c(getViewSize().getWidth() / 2., getViewSize().getHeight() / 2.);
-    double xradius = c.x - inset;
-    double yradius = c.y - inset;
-
-    point.x = (CCoord)(c.x + cosf(alpha) * xradius + 0.5f);
-    point.y = (CCoord)(c.y + sinf(alpha) * yradius + 0.5f);
-}
-
-float MyKnobText::valueFromPoint(CPoint& point) const {
-    float v;
-    double d = rangeAngle * 0.5;
-    double a = startAngle + d;
-
-    CPoint c(getViewSize().getWidth() / 2., getViewSize().getHeight() / 2.);
-    double xradius = c.x - inset;
-    double yradius = c.y - inset;
-
-    double dx = (point.x - c.x) / xradius;
-    double dy = (point.y - c.y) / yradius;
-
-    double alpha = atan2(dy, dx) - a;
-    while (alpha >= Constants::pi)
-        alpha -= Constants::double_pi;
-    while (alpha < -Constants::pi)
-        alpha += Constants::double_pi;
-
-    if (d < 0.0)
-        alpha = -alpha;
-
-    if (alpha > d)
-        v = getMax();
-    else if (alpha < -d)
-        v = getMin();
-    else
-    {
-        v = float(0.5 + alpha / rangeAngle);
-        v = getMin() + (v * getRange());
-    }
-
-    return v;
-};
-
-// overrides
-void MyKnobText::setText(const UTF8String& txt) {
-    float val = getValue();
-    val = atof(txt.getString().c_str());
-    if (getLogScale())
-        val = log(val / getMinPlain()) / log(getMaxPlain() / getMinPlain());
-    else
-        val = (val - getMinPlain()) / (getMaxPlain() - getMinPlain());
-    CTextLabel::setValue(val);
-    CTextEdit::setText(txt);
-};
-
-void MyKnobText::onMouseWheelEvent(MouseWheelEvent& event) {
-    onMouseWheelEditing(this);
-
-    float v = getValueNormalized();
-    if (buttonStateFromEventModifiers(event.modifiers) & kZoomModifier)
-        v += 0.1f * static_cast<float> (event.deltaY) * getWheelInc();
-    else
-        v += static_cast<float> (event.deltaY) * getWheelInc();
-    setValueNormalized(v);
-
-    if (isDirty())
-    {
-        invalid();
-        valueChanged();
-    }
-    event.consumed = true;
-};
-
-void MyKnobText::onKeyboardEvent(KeyboardEvent& event) {
-
-    if (!platformControl || event.type != EventType::KeyDown)
-        return;
-
-    if (event.virt == VirtualKey::Escape)
-    {
-        bWasReturnPressed = false;
-        platformControl->setText(text);
-        getFrame()->setFocusView(nullptr);
-        looseFocus();
-        event.consumed = true;
-    }
-    else if (event.virt == VirtualKey::Return)
-    {
-        bWasReturnPressed = true;
-        getFrame()->setFocusView(nullptr);
-        looseFocus();
-        event.consumed = true;
-    }
-
-
-    if (event.type != EventType::KeyDown)
-        return;
-    switch (event.virt)
-    {
-    case VirtualKey::Up:
-    case VirtualKey::Right:
-    case VirtualKey::Down:
-    case VirtualKey::Left:
-    {
-        float distance = 1.f;
-        if (event.virt == VirtualKey::Down || event.virt == VirtualKey::Left)
-            distance = -distance;
-
-        float v = getValueNormalized();
-        if (buttonStateFromEventModifiers(event.modifiers) & kZoomModifier)
-            v += 0.1f * distance * getWheelInc();
-        else
-            v += distance * getWheelInc();
-        setValueNormalized(v);
-
-        if (isDirty())
-        {
-            invalid();
-            beginEdit();
-            valueChanged();
-            endEdit();
-        }
-        event.consumed = true;
-    }
-    case VirtualKey::Escape:
-    {
-        if (isEditing())
-        {
-            onMouseCancel();
-            event.consumed = true;
-        }
-        break;
-    }
-    default: return;
-    }
-}
-
-void MyKnobText::setViewSize(const CRect& rect, bool invalid)
-{
-    CControl::setViewSize(rect, invalid);
-    compute();
-}
-
-bool MyKnobText::sizeToFit() {
-    if (getDrawBackground())
-    {
-        CRect vs(getViewSize());
-        vs.setWidth(getDrawBackground()->getWidth());
-        vs.setHeight(getDrawBackground()->getHeight());
-        setViewSize(vs);
-        setMouseableArea(vs);
-        return true;
-    }
-    return false;
-}
-
-CMouseEventResult MyKnobText::onMouseDown(CPoint& where, const CButtonState& buttons) {
-    if (!buttons.isLeftButton())
-        return kMouseEventNotHandled;
-
-    if (getFrame()->getFocusView() != this)
-    {
-        if (isDoubleClickStyle() && (buttons & kDoubleClick))
-        {
-            takeFocus();
-            return kMouseDownEventHandledButDontNeedMovedOrUpEvents;
-        }
-
-        // takeFocus();
-    }
-
-    CMouseWheelEditingSupport::invalidMouseWheelEditTimer(this);
-    beginEdit();
-
-    auto& mouseState = getMouseEditingState();
-    mouseState.firstPoint = where;
-    mouseState.lastPoint(-1, -1);
-    mouseState.startValue = getOldValue();
-
-    mouseState.modeLinear = false;
-    mouseState.entryState = value;
-    mouseState.range = kCKnobTextRange;
-    mouseState.coef = (getMax() - getMin()) / mouseState.range;
-    mouseState.oldButton = buttons;
-
-    int32_t mode = kCircularMode;
-    int32_t newMode = getFrame()->getKnobMode();
-    if (kLinearMode == newMode)
-    {
-        if (!(buttons & kAlt))
-            mode = newMode;
-    }
-    else if (buttons & kAlt)
-    {
-        mode = kLinearMode;
-    }
-
-    if (mode == kLinearMode)
-    {
-        if (buttons & kZoomModifier)
-            mouseState.range *= zoomFactor;
-        mouseState.lastPoint = where;
-        mouseState.modeLinear = true;
-        mouseState.coef = (getMax() - getMin()) / mouseState.range;
-    }
-    else
-    {
-        CPoint where2(where);
-        where2.offset(-getViewSize().left, -getViewSize().top);
-        mouseState.startValue = valueFromPoint(where2);
-        mouseState.lastPoint = where;
-    }
-
-    return onMouseMoved(where, buttons);
-};
-
-CMouseEventResult MyKnobText::onMouseUp(CPoint& where, const CButtonState& buttons) {
-    if (isEditing())
-    {
-        endEdit();
-        clearMouseEditingState();
-    }
-    return kMouseEventHandled;
-};
-
-CMouseEventResult MyKnobText::onMouseMoved(CPoint& where, const CButtonState& buttons) {
-    if (buttons.isLeftButton() && isEditing())
-    {
-        auto& mouseState = getMouseEditingState();
-
-        float middle = (getMax() - getMin()) * 0.5f;
-
-        if (where != mouseState.lastPoint)
-        {
-            mouseState.lastPoint = where;
-            if (mouseState.modeLinear)
-            {
-                CCoord diff = (mouseState.firstPoint.y - where.y) + (where.x - mouseState.firstPoint.x);
-                if (buttons != mouseState.oldButton)
-                {
-                    mouseState.range = kCKnobTextRange;
-                    if (buttons & kZoomModifier)
-                        mouseState.range *= zoomFactor;
-
-                    float coef2 = (getMax() - getMin()) / mouseState.range;
-                    mouseState.entryState += (float)(diff * (mouseState.coef - coef2));
-                    mouseState.coef = coef2;
-                    mouseState.oldButton = buttons;
-                }
-                //value = (float)(mouseState.entryState + diff * mouseState.coef);
-                setValue((float)(mouseState.entryState + diff * mouseState.coef));
-                bounceValue();
-            }
-            else
-            {
-                where.offset(-getViewSize().left, -getViewSize().top);
-                //value = valueFromPoint(where);
-                setValue(valueFromPoint(where));
-                if (mouseState.startValue - value > middle)
-                    setValue(getMax()); // value = getMax();
-                else if (value - mouseState.startValue > middle)
-                    setValue(getMin()); // value = getMin();
-                else
-                    mouseState.startValue = value;
-            }
-            if (value != getOldValue())
-                valueChanged();
-            if (isDirty())
-                invalid();
-        }
-        return kMouseEventHandled;
-    }
-    return kMouseEventNotHandled;
-};
-
-CMouseEventResult MyKnobText::onMouseCancel() {
-    if (isEditing())
-    {
-        auto& mouseState = getMouseEditingState();
-        //value = mouseState.startValue;
-        setValue(mouseState.startValue);
-        if (isDirty())
-        {
-            valueChanged();
-            invalid();
-        }
-        endEdit();
-        clearMouseEditingState();
-    }
-    return kMouseEventHandled;
-};
-
-auto MyKnobText::getMouseEditingState() -> MouseEditingState& {
-    MouseEditingState* state = nullptr;
-    if (!getAttribute(kCKnobTextMouseStateAttribute, state))
-    {
-        state = new MouseEditingState;
-        setAttribute(kCKnobTextMouseStateAttribute, state);
-    }
-    return *state;
-};
-
-void MyKnobText::clearMouseEditingState() {
-    MouseEditingState* state = nullptr;
-    if (!getAttribute(kCKnobTextMouseStateAttribute, state))
-        return;
-    delete state;
-    removeAttribute(kCKnobTextMouseStateAttribute);
-};
-
 
 EQCurveView::EQCurveView(
     const CRect& size,
@@ -415,49 +49,43 @@ EQCurveView::EQCurveView(const EQCurveView& v)
 
 void EQCurveView::setParamNorm(Steinberg::Vst::ParamID tag, Steinberg::Vst::ParamValue normValue)
 {
-    switch (tag) {
-        case yg331::kParamBand1_In: band1[yg331::bandIn] = normValue; break;
-        case yg331::kParamBand2_In: band2[yg331::bandIn] = normValue; break;
-        case yg331::kParamBand3_In: band3[yg331::bandIn] = normValue; break;
-        case yg331::kParamBand4_In: band4[yg331::bandIn] = normValue; break;
-        case yg331::kParamBand5_In: band5[yg331::bandIn] = normValue; break;
+    int index = std::max(((int)tag - yg331::kParamBand01_Used) / yg331::bandSize, 0);
+    switch (tag)
+    {
+        case yg331::kParamBand01_Used: case yg331::kParamBand02_Used: case yg331::kParamBand03_Used: case yg331::kParamBand04_Used: case yg331::kParamBand05_Used:
+        case yg331::kParamBand06_Used: case yg331::kParamBand07_Used: case yg331::kParamBand08_Used: case yg331::kParamBand09_Used: case yg331::kParamBand10_Used:
+        case yg331::kParamBand11_Used: case yg331::kParamBand12_Used: case yg331::kParamBand13_Used: case yg331::kParamBand14_Used: case yg331::kParamBand15_Used:
+        case yg331::kParamBand16_Used: case yg331::kParamBand17_Used: case yg331::kParamBand18_Used: case yg331::kParamBand19_Used: case yg331::kParamBand20_Used:
+            band[index].Used = normValue; break;
             
-        case yg331::kParamBand1_Hz: band1[yg331::bandHz] = yg331::paramFreq.ToPlain(normValue); break;
-        case yg331::kParamBand2_Hz: band2[yg331::bandHz] = yg331::paramFreq.ToPlain(normValue); break;
-        case yg331::kParamBand3_Hz: band3[yg331::bandHz] = yg331::paramFreq.ToPlain(normValue); break;
-        case yg331::kParamBand4_Hz: band4[yg331::bandHz] = yg331::paramFreq.ToPlain(normValue); break;
-        case yg331::kParamBand5_Hz: band5[yg331::bandHz] = yg331::paramFreq.ToPlain(normValue); break;
+        case yg331::kParamBand01_Type: case yg331::kParamBand02_Type: case yg331::kParamBand03_Type: case yg331::kParamBand04_Type: case yg331::kParamBand05_Type:
+        case yg331::kParamBand06_Type: case yg331::kParamBand07_Type: case yg331::kParamBand08_Type: case yg331::kParamBand09_Type: case yg331::kParamBand10_Type:
+        case yg331::kParamBand11_Type: case yg331::kParamBand12_Type: case yg331::kParamBand13_Type: case yg331::kParamBand14_Type: case yg331::kParamBand15_Type:
+        case yg331::kParamBand16_Type: case yg331::kParamBand17_Type: case yg331::kParamBand18_Type: case yg331::kParamBand19_Type: case yg331::kParamBand20_Type:
+            band[index].Type = yg331::paramType.ToPlain(normValue); break;
             
-        case yg331::kParamBand1_Q:  band1[yg331::bandQ]  = yg331::paramQlty.ToPlain(normValue); break;
-        case yg331::kParamBand2_Q:  band2[yg331::bandQ]  = yg331::paramQlty.ToPlain(normValue); break;
-        case yg331::kParamBand3_Q:  band3[yg331::bandQ]  = yg331::paramQlty.ToPlain(normValue); break;
-        case yg331::kParamBand4_Q:  band4[yg331::bandQ]  = yg331::paramQlty.ToPlain(normValue); break;
-        case yg331::kParamBand5_Q:  band5[yg331::bandQ]  = yg331::paramQlty.ToPlain(normValue); break;
+        case yg331::kParamBand01_Freq: case yg331::kParamBand02_Freq: case yg331::kParamBand03_Freq: case yg331::kParamBand04_Freq: case yg331::kParamBand05_Freq:
+        case yg331::kParamBand06_Freq: case yg331::kParamBand07_Freq: case yg331::kParamBand08_Freq: case yg331::kParamBand09_Freq: case yg331::kParamBand10_Freq:
+        case yg331::kParamBand11_Freq: case yg331::kParamBand12_Freq: case yg331::kParamBand13_Freq: case yg331::kParamBand14_Freq: case yg331::kParamBand15_Freq:
+        case yg331::kParamBand16_Freq: case yg331::kParamBand17_Freq: case yg331::kParamBand18_Freq: case yg331::kParamBand19_Freq: case yg331::kParamBand20_Freq:
+            band[index].Freq = yg331::paramFreq.ToPlain(normValue); break;
             
-        case yg331::kParamBand1_dB: band1[yg331::banddB] = yg331::paramGain.ToPlain(normValue); break;
-        case yg331::kParamBand2_dB: band2[yg331::banddB] = yg331::paramGain.ToPlain(normValue); break;
-        case yg331::kParamBand3_dB: band3[yg331::banddB] = yg331::paramGain.ToPlain(normValue); break;
-        case yg331::kParamBand4_dB: band4[yg331::banddB] = yg331::paramGain.ToPlain(normValue); break;
-        case yg331::kParamBand5_dB: band5[yg331::banddB] = yg331::paramGain.ToPlain(normValue); break;
+        case yg331::kParamBand01_Gain: case yg331::kParamBand02_Gain: case yg331::kParamBand03_Gain: case yg331::kParamBand04_Gain: case yg331::kParamBand05_Gain:
+        case yg331::kParamBand06_Gain: case yg331::kParamBand07_Gain: case yg331::kParamBand08_Gain: case yg331::kParamBand09_Gain: case yg331::kParamBand10_Gain:
+        case yg331::kParamBand11_Gain: case yg331::kParamBand12_Gain: case yg331::kParamBand13_Gain: case yg331::kParamBand14_Gain: case yg331::kParamBand15_Gain:
+        case yg331::kParamBand16_Gain: case yg331::kParamBand17_Gain: case yg331::kParamBand18_Gain: case yg331::kParamBand19_Gain: case yg331::kParamBand20_Gain:
+            band[index].Gain = yg331::paramGain.ToPlain(normValue); break;
             
-        case yg331::kParamBand1_Type: band1[yg331::bandType] = (yg331::paramType.ToPlain(normValue)); break;
-        case yg331::kParamBand2_Type: band2[yg331::bandType] = (yg331::paramType.ToPlain(normValue)); break;
-        case yg331::kParamBand3_Type: band3[yg331::bandType] = (yg331::paramType.ToPlain(normValue)); break;
-        case yg331::kParamBand4_Type: band4[yg331::bandType] = (yg331::paramType.ToPlain(normValue)); break;
-        case yg331::kParamBand5_Type: band5[yg331::bandType] = (yg331::paramType.ToPlain(normValue)); break;
+        case yg331::kParamBand01_Qlty: case yg331::kParamBand02_Qlty: case yg331::kParamBand03_Qlty: case yg331::kParamBand04_Qlty: case yg331::kParamBand05_Qlty:
+        case yg331::kParamBand06_Qlty: case yg331::kParamBand07_Qlty: case yg331::kParamBand08_Qlty: case yg331::kParamBand09_Qlty: case yg331::kParamBand10_Qlty:
+        case yg331::kParamBand11_Qlty: case yg331::kParamBand12_Qlty: case yg331::kParamBand13_Qlty: case yg331::kParamBand14_Qlty: case yg331::kParamBand15_Qlty:
+        case yg331::kParamBand16_Qlty: case yg331::kParamBand17_Qlty: case yg331::kParamBand18_Qlty: case yg331::kParamBand19_Qlty: case yg331::kParamBand20_Qlty:
+            band[index].Qlty = yg331::paramQlty.ToPlain(normValue); break;
             
-        case yg331::kParamBand1_Order: band1[yg331::bandOrder] = (yg331::paramOrdr.ToPlain(normValue)); break;
-        case yg331::kParamBand2_Order: band2[yg331::bandOrder] = (yg331::paramOrdr.ToPlain(normValue)); break;
-        case yg331::kParamBand3_Order: band3[yg331::bandOrder] = (yg331::paramOrdr.ToPlain(normValue)); break;
-        case yg331::kParamBand4_Order: band4[yg331::bandOrder] = (yg331::paramOrdr.ToPlain(normValue)); break;
-        case yg331::kParamBand5_Order: band5[yg331::bandOrder] = (yg331::paramOrdr.ToPlain(normValue)); break;
         default: break;
     }
-    band1_svf.setSVF(band1[yg331::bandIn], band1[yg331::bandHz], band1[yg331::bandQ], band1[yg331::banddB], band1[yg331::bandType], band1[yg331::bandOrder], EQ_SR);
-    band2_svf.setSVF(band2[yg331::bandIn], band2[yg331::bandHz], band2[yg331::bandQ], band2[yg331::banddB], band2[yg331::bandType], band2[yg331::bandOrder], EQ_SR);
-    band3_svf.setSVF(band3[yg331::bandIn], band3[yg331::bandHz], band3[yg331::bandQ], band3[yg331::banddB], band3[yg331::bandType], band3[yg331::bandOrder], EQ_SR);
-    band4_svf.setSVF(band4[yg331::bandIn], band4[yg331::bandHz], band4[yg331::bandQ], band4[yg331::banddB], band4[yg331::bandType], band4[yg331::bandOrder], EQ_SR);
-    band5_svf.setSVF(band5[yg331::bandIn], band5[yg331::bandHz], band5[yg331::bandQ], band5[yg331::banddB], band5[yg331::bandType], band5[yg331::bandOrder], EQ_SR);
+    for (int bands = 0; bands < yg331::numBands; bands++)
+        svf[bands].setSVF(band[bands].Used, band[bands].Type, band[bands].Freq, band[bands].Gain, band[bands].Qlty, EQ_SR);
 }
 
 #define cubic_hermite(A, B, C, D, t) \
@@ -496,6 +124,32 @@ void EQCurveView::setFFTArray(float* array, int sampleBlockSize, double sampleRa
     }
 }
 
+static constexpr CColor color_01(121, 222, 82 ); // #79de52
+static constexpr CColor color_02(78,  144, 221); // #4e90dd
+static constexpr CColor color_03(181, 61,  221); // #b53ddd
+static constexpr CColor color_04(225, 58,  47 ); // #e13b2f
+static constexpr CColor color_05(79,  33,  235); // #4f21eb
+static constexpr CColor color_06(205, 253, 84 ); // #cdfd54
+static constexpr CColor color_07(86,  183, 249); // #56b7f9
+static constexpr CColor color_08(119, 251, 181); // #77fbb5
+static constexpr CColor color_09(124, 179, 104); // #7cb368
+static constexpr CColor color_10(103, 141, 179); // #678db3
+static constexpr CColor color_11(156, 95,  178); // #9c5fb2
+static constexpr CColor color_12(179, 91,  88 ); // #b35b58
+static constexpr CColor color_13(107, 84,  85 ); // #6b5455
+static constexpr CColor color_14(173, 195, 97 ); // #adc361
+static constexpr CColor color_15(101, 161, 192); // #65a1c0
+static constexpr CColor color_16(113, 194, 158); // #71c29e
+static constexpr CColor color_17(131, 159, 120); // #839f78
+static constexpr CColor color_18(121, 140, 158); // #798c9e
+static constexpr CColor color_19(145, 116, 157); // #91749d
+static constexpr CColor color_20(175, 113, 112); // #af7170
+static constexpr CColor color_X1(122, 111, 161); // #7a6fa1
+static constexpr CColor color_X2(155, 166, 116); // #9ba674
+static constexpr CColor color_Line(239, 194, 82);
+CColor pallet[20] = {
+    color_01, color_02, color_03, color_04, color_05, color_06, color_07, color_08, color_09, color_10,
+    color_11, color_12, color_13, color_14, color_15, color_16, color_17, color_18, color_19, color_20};
 
 // overrides
 void EQCurveView::draw(CDrawContext* pContext) {
@@ -637,23 +291,113 @@ void EQCurveView::draw(CDrawContext* pContext) {
 
         FFT_curve->forget();
     }
+    
+    std::vector<double> each_band[yg331::numBands];
+    for (int bands = 0; bands < yg331::numBands; bands++)
+    {
+        VSTGUI::CGraphicsPath* EQ_curve = pContext->createGraphicsPath();
+        if (EQ_curve)
+        {
+            VSTGUI::CCoord y_mid = r.bottom - (r.getHeight() / 2.0);
+            EQ_curve->beginSubpath(VSTGUI::CPoint(r.left - 1, y_mid));
+            for (double x = -0.5; x <= r.getWidth() + 1; x+=0.5)
+            {
+                double tmp = MIN_FREQ * std::exp(FREQ_LOG_MAX * x / r.getWidth());
+                double freq = (std::max)((std::min)(tmp, MAX_FREQ), MIN_FREQ);
+                double dB = 20 * log10(svf[bands].mag_response(freq));
+                if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
+                {
+                    dB = svf[bands].phs_response(freq);
+                }
+                each_band[bands].push_back(dB);
+                
+                double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
+                if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
+                {
+                    m = (((dB / M_PI) / 2) + 0.5);
+                }
+                double scy = m * r.getHeight();
 
+                if (byPass) scy = 0.5 * r.getHeight();
+                EQ_curve->addLine(VSTGUI::CPoint(r.left + x, r.top + scy));
+            }
+            EQ_curve->addLine(VSTGUI::CPoint(r.right + 1, r.bottom + 1));
+            EQ_curve->addLine(VSTGUI::CPoint(r.left - 1, r.bottom + 1));
+            EQ_curve->closeSubpath();
+
+            // pContext->setFrameColor(getLineColor().setNormAlpha(0.5));
+            CColor line = pallet[bands];
+            // line.setNormAlpha(0.5);
+            if (svf[bands].getIn() == 0) line.setNormAlpha(0.0);
+            pContext->setFrameColor(line);
+            pContext->setDrawMode(VSTGUI::kAntiAliasing);
+            pContext->setLineWidth(1.0);
+            pContext->setLineStyle(VSTGUI::kLineSolid);
+            if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
+            {
+                pContext->setLineStyle(VSTGUI::kLineOnOffDash);
+            }
+            pContext->drawGraphicsPath(EQ_curve, VSTGUI::CDrawContext::kPathStroked);
+            EQ_curve->forget();
+        }
+    }
+    for (int bands = 0; bands < yg331::numBands; bands++)
+    {
+        VSTGUI::CGraphicsPath* EQ_curve = pContext->createGraphicsPath();
+        if (EQ_curve)
+        {
+            VSTGUI::CCoord y_mid = r.bottom - (r.getHeight() / 2.0);
+            EQ_curve->beginSubpath(VSTGUI::CPoint(r.left - 1, y_mid));
+            for (double x = -0.5, i = 0; x <= r.getWidth() + 1; x+=0.5, i++)
+            {
+                double tmp = MIN_FREQ * std::exp(FREQ_LOG_MAX * x / r.getWidth());
+                double freq = (std::max)((std::min)(tmp, MAX_FREQ), MIN_FREQ);
+                double dB = each_band[bands][i];
+                
+                double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
+                if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
+                {
+                    m = (((dB / M_PI) / 2) + 0.5);
+                }
+                double scy = m * r.getHeight();
+
+                if (byPass) scy = 0.5 * r.getHeight();
+                EQ_curve->addLine(VSTGUI::CPoint(r.left + x, r.top + scy));
+            }
+            EQ_curve->addLine(VSTGUI::CPoint(r.right + 1, y_mid));
+            EQ_curve->addLine(VSTGUI::CPoint(r.left - 1, y_mid));
+            EQ_curve->closeSubpath();
+
+            // pContext->setFrameColor(getLineColor().setNormAlpha(0.5));
+            CColor line = pallet[bands];
+            // line.setNormAlpha(0.5);
+            if (svf[bands].getIn() == 0) line.setNormAlpha(0.0);
+            pContext->setFrameColor(line);
+            line.setNormAlpha(0.2);
+            if (svf[bands].getIn() == 0) line.setNormAlpha(0.0);
+            pContext->setFillColor(line);
+            pContext->setDrawMode(VSTGUI::kAntiAliasing);
+            pContext->setLineWidth(1.0);
+            pContext->setLineStyle(VSTGUI::kLineSolid);
+            pContext->drawGraphicsPath(EQ_curve, VSTGUI::CDrawContext::kPathFilled);
+            EQ_curve->forget();
+        }
+    }
     VSTGUI::CGraphicsPath* EQ_curve = pContext->createGraphicsPath();
     if (EQ_curve)
     {
         VSTGUI::CCoord y_mid = r.bottom - (r.getHeight() / 2.0);
-        EQ_curve->beginSubpath(VSTGUI::CPoint(r.left - 1, y_mid));
-        for (double x = -0.5; x <= r.getWidth() + 1; x+=0.5)
+        // Start from back
+        EQ_curve->beginSubpath(VSTGUI::CPoint(r.right + 1, y_mid));
+        for (double x = r.getWidth() + 1; x >= -0.5; x-=0.5)
         {
-            double tmp = MIN_FREQ * std::exp(FREQ_LOG_MAX * x / r.getWidth());
-            double freq = (std::max)((std::min)(tmp, MAX_FREQ), MIN_FREQ);
-
-            double dB_1 = 20 * log10(band1_svf.mag_response(freq));
-            double dB_2 = 20 * log10(band2_svf.mag_response(freq));
-            double dB_3 = 20 * log10(band3_svf.mag_response(freq));
-            double dB_4 = 20 * log10(band4_svf.mag_response(freq));
-            double dB_5 = 20 * log10(band5_svf.mag_response(freq));
-            double dB = level + dB_1 + dB_2 + dB_3 + dB_4 + dB_5;
+            double dB = level;
+            for (int bands = 0; bands < yg331::numBands; bands++)
+            {
+                if (svf[bands].Type != yg331::SVF_Generic::tAllPass)
+                    dB += each_band[bands].back();
+                each_band[bands].pop_back();
+            }
 
             double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
             double scy = m * r.getHeight();
@@ -661,13 +405,14 @@ void EQCurveView::draw(CDrawContext* pContext) {
             if (byPass) scy = 0.5 * r.getHeight();
             EQ_curve->addLine(VSTGUI::CPoint(r.left + x, r.top + scy));
         }
-        EQ_curve->addLine(VSTGUI::CPoint(r.right + 1, r.bottom + 1));
         EQ_curve->addLine(VSTGUI::CPoint(r.left - 1, r.bottom + 1));
+        EQ_curve->addLine(VSTGUI::CPoint(r.right + 1, r.bottom + 1));
         EQ_curve->closeSubpath();
 
-        pContext->setFrameColor(getLineColor());
+        // pContext->setFrameColor(getLineColor());
+        pContext->setFrameColor(color_Line);
         pContext->setDrawMode(VSTGUI::kAntiAliasing);
-        pContext->setLineWidth(1.5);
+        pContext->setLineWidth(2.0);
         pContext->setLineStyle(VSTGUI::kLineSolid);
         pContext->drawGraphicsPath(EQ_curve, VSTGUI::CDrawContext::kPathStroked);
         EQ_curve->forget();
@@ -701,146 +446,6 @@ static const std::string kAttrLineColor = "line-color";
 static const std::string kAttrFFTLineColor = "FFT-line-color";
 static const std::string kAttrFFTFillColor = "FFT-fill-color";
 
-//------------------------------------------------------------------------
-//  Factory for TextEdit
-//------------------------------------------------------------------------
-class MyKnobTextFactory : public ViewCreatorAdapter
-{
-public:
-    //register this class with the view factory
-    MyKnobTextFactory() { UIViewFactory::registerViewCreator(*this); }
-
-    //return an unique name here
-    IdStringPtr getViewName() const override { return "KnobText"; }
-
-    //return the name here from where your custom view inherites.
-    //	Your view automatically supports the attributes from it.
-    IdStringPtr getBaseViewName() const override { return UIViewCreator::kCTextEdit; }
-
-    //create your view here.
-    //	Note you don't need to apply attributes here as
-    //	the apply method will be called with this new view
-    CView* create(const UIAttributes& attributes, const IUIDescription* description) const override
-    {
-        return new MyKnobText(CRect(0, 0, 100, 20), nullptr, -1, nullptr, nullptr);
-    }
-    bool apply(
-        CView* view,
-        const UIAttributes& attributes,
-        const IUIDescription* description) const override
-    {
-        auto* KnobText = dynamic_cast<MyKnobText*> (view);
-
-        if (!KnobText)
-            return false;
-
-        double d;
-        if (attributes.getDoubleAttribute(UIViewCreator::kAttrAngleStart, d))
-        {
-            // convert from degree
-            d = d / 180.f * static_cast<float> (Constants::pi);
-            KnobText->setStartAngle(static_cast<float> (d));
-        }
-        if (attributes.getDoubleAttribute(UIViewCreator::kAttrAngleRange, d))
-        {
-            // convert from degree
-            d = d / 180.f * static_cast<float> (Constants::pi);
-            KnobText->setRangeAngle(static_cast<float> (d));
-        }
-        if (attributes.getDoubleAttribute(UIViewCreator::kAttrValueInset, d))
-            KnobText->setInsetValue(d);
-        if (attributes.getDoubleAttribute(UIViewCreator::kAttrZoomFactor, d))
-            KnobText->setZoomFactor(static_cast<float> (d));
-        if (attributes.getDoubleAttribute(kAttrMinPlain, d))
-            KnobText->setMinPlain(static_cast<float> (d));
-        if (attributes.getDoubleAttribute(kAttrMaxPlain, d))
-            KnobText->setMaxPlain(static_cast<float> (d));
-
-        bool b;
-        if (attributes.getBooleanAttribute(kAttrLogScale, b))
-            KnobText->setLogScale(b);
-
-        return true;
-    }
-
-    bool getAttributeNames(StringList& attributeNames) const override
-    {
-        attributeNames.emplace_back(UIViewCreator::kAttrAngleStart);
-        attributeNames.emplace_back(UIViewCreator::kAttrAngleRange);
-        attributeNames.emplace_back(UIViewCreator::kAttrValueInset);
-        attributeNames.emplace_back(UIViewCreator::kAttrZoomFactor);
-        attributeNames.emplace_back(kAttrMinPlain);
-        attributeNames.emplace_back(kAttrMaxPlain);
-        attributeNames.emplace_back(kAttrLogScale);
-        return true;
-    }
-
-    AttrType getAttributeType(const std::string& attributeName) const override
-    {
-        if (attributeName == UIViewCreator::kAttrAngleStart)
-            return kFloatType;
-        if (attributeName == UIViewCreator::kAttrAngleRange)
-            return kFloatType;
-        if (attributeName == UIViewCreator::kAttrValueInset)
-            return kFloatType;
-        if (attributeName == UIViewCreator::kAttrZoomFactor)
-            return kFloatType;
-        if (attributeName == kAttrMinPlain)
-            return kFloatType;
-        if (attributeName == kAttrMaxPlain)
-            return kFloatType;
-        if (attributeName == kAttrLogScale)
-            return kBooleanType;
-        return kUnknownType;
-    }
-
-    //------------------------------------------------------------------------
-    bool getAttributeValue(
-        CView* view,
-        const string& attributeName,
-        string& stringValue,
-        const IUIDescription* desc) const override
-    {
-        auto* KnobText = dynamic_cast<MyKnobText*> (view);
-        if (!KnobText)
-            return false;
-
-        if (attributeName == UIViewCreator::kAttrAngleStart)
-        {
-            stringValue =
-                UIAttributes::doubleToString((KnobText->getStartAngle() / Constants::pi * 180.), 5);
-            return true;
-        }
-        if (attributeName == UIViewCreator::kAttrAngleRange)
-        {
-            stringValue =
-                UIAttributes::doubleToString((KnobText->getRangeAngle() / Constants::pi * 180.), 5);
-            return true;
-        }
-        if (attributeName == UIViewCreator::kAttrValueInset)
-        {
-            stringValue = UIAttributes::doubleToString(KnobText->getInsetValue());
-            return true;
-        }
-        if (attributeName == kAttrMinPlain)
-        {
-            stringValue = UIAttributes::doubleToString(KnobText->getMinPlain());
-            return true;
-        }
-        if (attributeName == kAttrMaxPlain)
-        {
-            stringValue = UIAttributes::doubleToString(KnobText->getMaxPlain());
-            return true;
-        }
-        if (attributeName == kAttrLogScale)
-        {
-            stringValue = KnobText->getLogScale() ? UIViewCreator::strTrue : UIViewCreator::strFalse;
-            return true;
-        }
-        return false;
-    }
-};
-
 class MyEQCurveViewFactory : public ViewCreatorAdapter
 {
 public:
@@ -851,12 +456,12 @@ public:
     IdStringPtr getViewName() const override { return "EQ Curve View"; }
 
     //return the name here from where your custom view inherites.
-    //	Your view automatically supports the attributes from it.
+    //    Your view automatically supports the attributes from it.
     IdStringPtr getBaseViewName() const override { return UIViewCreator::kCControl; }
 
     //create your view here.
-    //	Note you don't need to apply attributes here as
-    //	the apply method will be called with this new view
+    //    Note you don't need to apply attributes here as
+    //    the apply method will be called with this new view
     CView* create(const UIAttributes& attributes, const IUIDescription* description) const override
     {
         return new EQCurveView(CRect(0, 0, 100, 20), nullptr, -1, nullptr);
@@ -953,15 +558,11 @@ public:
     }
 };
 
-
-//create a static instance so that it registers itself with the view factory
-MyKnobTextFactory    __gMyMyKnobTextFactory;
 MyEQCurveViewFactory __gMyEQCurveViewFactory;
-} // namespace VSTGUI
+
+}
 
 namespace yg331 {
-
-
 //------------------------------------------------------------------------
 // LogRangeParameter Declaration
 //------------------------------------------------------------------------
@@ -1162,116 +763,79 @@ tresult PLUGIN_API GNRC_EQ_Controller::initialize (FUnknown* context)
     auto* ParamLevel = new LinRangeParameter(STR16("Level"), tag, STR16("dB"), minParamGain, maxParamGain, dftParamGain, stepCount, flags);
     ParamLevel->setPrecision(1);
     parameters.addParameter(ParamLevel);
-
-    stepCount = 1;
-    defaultVal = 1;
-    parameters.addParameter(STR16("Band1_In"), nullptr, stepCount, defaultVal, flags, kParamBand1_In);
-    parameters.addParameter(STR16("Band2_In"), nullptr, stepCount, defaultVal, flags, kParamBand2_In);
-    parameters.addParameter(STR16("Band3_In"), nullptr, stepCount, defaultVal, flags, kParamBand3_In);
-    parameters.addParameter(STR16("Band4_In"), nullptr, stepCount, defaultVal, flags, kParamBand4_In);
-    parameters.addParameter(STR16("Band5_In"), nullptr, stepCount, defaultVal, flags, kParamBand5_In);
-
-    stepCount = 0;
-
-    auto* Band1_dB = new LinRangeParameter_noUnit(STR("Band1_dB"), kParamBand1_dB, STR("dB"), minParamGain, maxParamGain, dftParamGain, stepCount, flags);
-    auto* Band2_dB = new LinRangeParameter_noUnit(STR("Band2_dB"), kParamBand2_dB, STR("dB"), minParamGain, maxParamGain, dftParamGain, stepCount, flags);
-    auto* Band3_dB = new LinRangeParameter_noUnit(STR("Band3_dB"), kParamBand3_dB, STR("dB"), minParamGain, maxParamGain, dftParamGain, stepCount, flags);
-    auto* Band4_dB = new LinRangeParameter_noUnit(STR("Band4_dB"), kParamBand4_dB, STR("dB"), minParamGain, maxParamGain, dftParamGain, stepCount, flags);
-    auto* Band5_dB = new LinRangeParameter_noUnit(STR("Band5_dB"), kParamBand5_dB, STR("dB"), minParamGain, maxParamGain, dftParamGain, stepCount, flags);
-    Band1_dB->setPrecision(2);
-    Band2_dB->setPrecision(2);
-    Band3_dB->setPrecision(2);
-    Band4_dB->setPrecision(2);
-    Band5_dB->setPrecision(2);
-    parameters.addParameter(Band1_dB);
-    parameters.addParameter(Band2_dB);
-    parameters.addParameter(Band3_dB);
-    parameters.addParameter(Band4_dB);
-    parameters.addParameter(Band5_dB);
     
-    auto* Band1_Hz = new LogRangeParameter_noUnit(STR("Band1_Hz"), kParamBand1_Hz, STR("Hz"), minParamFreq, maxParamFreq, dftBand1Freq, stepCount, flags);
-    auto* Band2_Hz = new LogRangeParameter_noUnit(STR("Band2_Hz"), kParamBand2_Hz, STR("Hz"), minParamFreq, maxParamFreq, dftBand2Freq, stepCount, flags);
-    auto* Band3_Hz = new LogRangeParameter_noUnit(STR("Band3_Hz"), kParamBand3_Hz, STR("Hz"), minParamFreq, maxParamFreq, dftBand3Freq, stepCount, flags);
-    auto* Band4_Hz = new LogRangeParameter_noUnit(STR("Band4_Hz"), kParamBand4_Hz, STR("Hz"), minParamFreq, maxParamFreq, dftBand4Freq, stepCount, flags);
-    auto* Band5_Hz = new LogRangeParameter_noUnit(STR("Band5_Hz"), kParamBand5_Hz, STR("Hz"), minParamFreq, maxParamFreq, dftBand5Freq, stepCount, flags);
-    Band1_Hz->setPrecision(0);
-    Band2_Hz->setPrecision(0);
-    Band3_Hz->setPrecision(0);
-    Band4_Hz->setPrecision(0);
-    Band5_Hz->setPrecision(0);
-    parameters.addParameter(Band1_Hz);
-    parameters.addParameter(Band2_Hz);
-    parameters.addParameter(Band3_Hz);
-    parameters.addParameter(Band4_Hz);
-    parameters.addParameter(Band5_Hz);
-
-    auto* Band1_Q = new LogRangeParameter_noUnit(STR16("Band1_Q"), kParamBand1_Q, STR16("Q"), minParamQlty, maxParamQlty, dftParamQlty, stepCount, flags);
-    auto* Band2_Q = new LogRangeParameter_noUnit(STR16("Band2_Q"), kParamBand2_Q, STR16("Q"), minParamQlty, maxParamQlty, dftParamQlty, stepCount, flags);
-    auto* Band3_Q = new LogRangeParameter_noUnit(STR16("Band3_Q"), kParamBand3_Q, STR16("Q"), minParamQlty, maxParamQlty, dftParamQlty, stepCount, flags);
-    auto* Band4_Q = new LogRangeParameter_noUnit(STR16("Band4_Q"), kParamBand4_Q, STR16("Q"), minParamQlty, maxParamQlty, dftParamQlty, stepCount, flags);
-    auto* Band5_Q = new LogRangeParameter_noUnit(STR16("Band5_Q"), kParamBand5_Q, STR16("Q"), minParamQlty, maxParamQlty, dftParamQlty, stepCount, flags);
-    Band1_Q->setPrecision(1);
-    Band2_Q->setPrecision(1);
-    Band3_Q->setPrecision(1);
-    Band4_Q->setPrecision(1);
-    Band5_Q->setPrecision(1);
-    parameters.addParameter(Band1_Q);
-    parameters.addParameter(Band2_Q);
-    parameters.addParameter(Band3_Q);
-    parameters.addParameter(Band4_Q);
-    parameters.addParameter(Band5_Q);
+    // STR16 == STR == u"string"
+    // auto s3 =  u"hello"; // const char16_t*, encoded as UTF-16 // char16_t -> std::u16string
+    // SMTG : char16 == char16_t
     
-    flags = Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList;
-
-    auto* Band1_Type = new Vst::StringListParameter(STR16("Band1_Type"), kParamBand1_Type, STR16(""), flags);
-    auto* Band2_Type = new Vst::StringListParameter(STR16("Band2_Type"), kParamBand2_Type, STR16(""), flags);
-    auto* Band3_Type = new Vst::StringListParameter(STR16("Band3_Type"), kParamBand3_Type, STR16(""), flags);
-    auto* Band4_Type = new Vst::StringListParameter(STR16("Band4_Type"), kParamBand4_Type, STR16(""), flags);
-    auto* Band5_Type = new Vst::StringListParameter(STR16("Band5_Type"), kParamBand5_Type, STR16(""), flags);
-
-    for (int i = 0; i < SVF::tNum + 1; i++) {
-        Band1_Type->appendString(Filter_Types[i]);
-        Band2_Type->appendString(Filter_Types[i]);
-        Band3_Type->appendString(Filter_Types[i]);
-        Band4_Type->appendString(Filter_Types[i]);
-        Band5_Type->appendString(Filter_Types[i]);
+    for (int bands = 0; bands < numBands; bands++)
+    {
+        UString128 base;
+        base.assign("Band ");
+        UString128 bandNumber;
+        bandNumber.printInt(bands+1);
+        base.append(bandNumber);
+        
+        Vst::UnitInfo unitInfo;
+        Vst::Unit* unit; // create a unit for each bands
+        unitInfo.id = bands+1;
+        unitInfo.parentUnitId = Steinberg::Vst::kRootUnitId;    // attached to the root unit
+        Steinberg::UString (unitInfo.name, USTRINGSIZE (unitInfo.name)).assign (base);
+        unitInfo.programListId = Steinberg::Vst::kNoProgramListId;
+        unit = new Vst::Unit (unitInfo);
+        addUnit (unit);
+        
+        
+        stepCount = 1;
+        defaultVal = 0;
+        flags = Vst::ParameterInfo::kCanAutomate;
+        
+        UString128 title_Used;
+        title_Used.assign(base);
+        title_Used.append(USTRING(" Used"));
+        parameters.addParameter(title_Used, nullptr, stepCount, defaultVal, flags, bands * bandSize + kParamBand01_Used, unitInfo.id);
+        
+        
+        flags = Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList;
+        
+        UString128 title_Type;
+        title_Type.assign(base);
+        title_Type.append(USTRING(" Type"));
+        auto* Band_Type = new Vst::StringListParameter(title_Type, bands * bandSize + kParamBand01_Type, STR16(""), flags);
+        for (int i = 0; i < SVF_Generic::tSize; i++)
+            Band_Type->appendString(SVF_Generic::Filter_Types[i]);
+        Band_Type->getInfo().defaultNormalizedValue = nrmParamType;
+        Band_Type->setUnitID(unitInfo.id);
+        parameters.addParameter(Band_Type);
+        
+        
+        stepCount = 0;
+        flags = Vst::ParameterInfo::kCanAutomate;
+        
+        UString128 title_Freq;
+        title_Freq.assign(base);
+        title_Freq.append(USTRING(" Freq"));
+        auto* Band_Hz = new LogRangeParameter_noUnit(title_Freq, bands * bandSize + kParamBand01_Freq, STR("Hz"), minParamFreq, maxParamFreq, dftBandFreq[bands], stepCount, flags);
+        Band_Hz->setPrecision(1);
+        Band_Hz->setUnitID(unitInfo.id);
+        parameters.addParameter(Band_Hz);
+        
+        UString128 title_Gain;
+        title_Gain.assign(base);
+        title_Gain.append(USTRING(" Gain"));
+        auto* Band_dB = new LinRangeParameter_noUnit(title_Gain, bands * bandSize + kParamBand01_Gain, STR("dB"), minParamGain, maxParamGain, dftParamGain, stepCount, flags);
+        Band_dB->setPrecision(2);
+        Band_dB->setUnitID(unitInfo.id);
+        parameters.addParameter(Band_dB);
+        
+        UString128 title_Qlty;
+        title_Qlty.assign(base);
+        title_Qlty.append(USTRING(" Q"));
+        auto* Band_Q = new LogRangeParameter_noUnit(title_Qlty, bands * bandSize + kParamBand01_Qlty, STR16("Q"), minParamQlty, maxParamQlty, dftParamQlty, stepCount, flags);
+        Band_Q->setPrecision(1);
+        Band_Q->setUnitID(unitInfo.id);
+        parameters.addParameter(Band_Q);
     }
-
-    Band1_Type->setNormalized(nrmParamType);
-    Band2_Type->setNormalized(nrmParamType);
-    Band3_Type->setNormalized(nrmParamType);
-    Band4_Type->setNormalized(nrmParamType);
-    Band5_Type->setNormalized(nrmParamType);
-
-    parameters.addParameter(Band1_Type);
-    parameters.addParameter(Band2_Type);
-    parameters.addParameter(Band3_Type);
-    parameters.addParameter(Band4_Type);
-    parameters.addParameter(Band5_Type);
-
-
-    auto* Band1_Order = new Vst::StringListParameter(STR16("Band1_Order"), kParamBand1_Order, STR16(""), flags);
-    auto* Band2_Order = new Vst::StringListParameter(STR16("Band2_Order"), kParamBand2_Order, STR16(""), flags);
-    auto* Band3_Order = new Vst::StringListParameter(STR16("Band3_Order"), kParamBand3_Order, STR16(""), flags);
-    auto* Band4_Order = new Vst::StringListParameter(STR16("Band4_Order"), kParamBand4_Order, STR16(""), flags);
-    auto* Band5_Order = new Vst::StringListParameter(STR16("Band5_Order"), kParamBand5_Order, STR16(""), flags);
-    for (int i = 0; i < SVF::oNum + 1; i++) {
-        Band1_Order->appendString(Filter_Order[i]);
-        Band2_Order->appendString(Filter_Order[i]);
-        Band3_Order->appendString(Filter_Order[i]);
-        Band4_Order->appendString(Filter_Order[i]);
-        Band5_Order->appendString(Filter_Order[i]);
-    }
-    Band1_Order->setNormalized(nrmParamOrdr);
-    Band2_Order->setNormalized(nrmParamOrdr);
-    Band3_Order->setNormalized(nrmParamOrdr);
-    Band4_Order->setNormalized(nrmParamOrdr);
-    Band5_Order->setNormalized(nrmParamOrdr);
-    parameters.addParameter(Band1_Order);
-    parameters.addParameter(Band2_Order);
-    parameters.addParameter(Band3_Order);
-    parameters.addParameter(Band4_Order);
-    parameters.addParameter(Band5_Order);
     
     // GUI only parameter
     Vst::StringListParameter* zoomParameter = new Vst::StringListParameter(STR("Zoom"), kParamZoom);
@@ -1304,71 +868,56 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     // Here you get the state of the component (Processor part)
     if (!state)
         return kResultFalse;
-
+    // fprintf (stdout, "GNRC_EQ_Controller::setComponentState\n");
     IBStreamer streamer(state, kLittleEndian);
 
+    // 1. Read Plain Values
     int32           savedBypass = 0;
     Vst::ParamValue savedZoom   = 0.0;
     Vst::ParamValue savedLevel  = 0.0;
-    Vst::ParamValue savedOutput = 0.0;
     
-    ParamBand_Array savedBand1_Array = {1.0, nrmBand1Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand2_Array = {1.0, nrmBand2Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand3_Array = {1.0, nrmBand3Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand4_Array = {1.0, nrmBand4Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand5_Array = {1.0, nrmBand5Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
+    bandParamSet savedBand[numBands];
 
     if (streamer.readInt32 (savedBypass) == false) return kResultFalse;
     if (streamer.readDouble(savedZoom  ) == false) return kResultFalse;
     if (streamer.readDouble(savedLevel ) == false) return kResultFalse;
-    if (streamer.readDouble(savedOutput) == false) return kResultFalse;
 
-    if (streamer.readDoubleArray(savedBand1_Array, bandSize) == false) return kResultFalse;
-    if (streamer.readDoubleArray(savedBand2_Array, bandSize) == false) return kResultFalse;
-    if (streamer.readDoubleArray(savedBand3_Array, bandSize) == false) return kResultFalse;
-    if (streamer.readDoubleArray(savedBand4_Array, bandSize) == false) return kResultFalse;
-    if (streamer.readDoubleArray(savedBand5_Array, bandSize) == false) return kResultFalse;
-
-    auto setParamNormArray = [this](double Array[], int num)
+    for (int bands = 0; bands < numBands; bands++)
     {
-        setParamNormalized(kParamBand1_In    + num, Array[bandIn] ? 1 : 0);
-        setParamNormalized(kParamBand1_Hz    + num, Array[bandHz]);
-        setParamNormalized(kParamBand1_Q     + num, Array[bandQ]);
-        setParamNormalized(kParamBand1_dB    + num, Array[banddB]);
-        setParamNormalized(kParamBand1_Type  + num, Array[bandType]);
-        setParamNormalized(kParamBand1_Order + num, Array[bandOrder]);
-    };
+        if (streamer.readInt32 (savedBand[bands].Used) == false) return kResultFalse;
+        if (streamer.readInt32 (savedBand[bands].Type) == false) return kResultFalse;
+        if (streamer.readDouble(savedBand[bands].Freq) == false) return kResultFalse;
+        if (streamer.readDouble(savedBand[bands].Gain) == false) return kResultFalse;
+        if (streamer.readDouble(savedBand[bands].Qlty) == false) return kResultFalse;
+    }
     
-    setParamNormalized(kParamBypass, savedBypass ? 1 : 0);
-    // setParamNormalized(kParamZoom, savedZoom);
-    setParamNormalized(kParamLevel, savedLevel);
-    // setParamNormalized(kParamOutput, savedOutput);
-    
-    setParamNormArray(savedBand1_Array, 0);
-    setParamNormArray(savedBand2_Array, 1);
-    setParamNormArray(savedBand3_Array, 2);
-    setParamNormArray(savedBand4_Array, 3);
-    setParamNormArray(savedBand5_Array, 4);
-    
-    auto copyArray = [this](double dst[], double src[]) {
-        dst[bandIn]    = src[bandIn];
-        dst[bandHz]    = src[bandHz];
-        dst[bandQ]     = src[bandQ];
-        dst[banddB]    = src[banddB];
-        dst[bandType]  = src[bandType];
-        dst[bandOrder] = src[bandOrder];
-    };
-
+    // 2. Save as Norm Values
     pBypass = savedBypass > 0;
     // fZoom   = savedZoom;
     fLevel  = savedLevel;
-    // fOutput = savedOutput;
-
-    copyArray(fParamBand1_Array, savedBand1_Array);
-    copyArray(fParamBand2_Array, savedBand2_Array);
-    copyArray(fParamBand3_Array, savedBand3_Array);
-    copyArray(fParamBand4_Array, savedBand4_Array);
-    copyArray(fParamBand5_Array, savedBand5_Array);
+    
+    for (int bands = 0; bands < numBands; bands++)
+    {
+        pBand[bands][bandUsed] = savedBand[bands].Used;
+        pBand[bands][bandType] = paramType.ToNormalized(savedBand[bands].Type);
+        pBand[bands][bandFreq] = paramFreq.ToNormalized(savedBand[bands].Freq);
+        pBand[bands][bandGain] = paramGain.ToNormalized(savedBand[bands].Gain);
+        pBand[bands][bandQlty] = paramQlty.ToNormalized(savedBand[bands].Qlty);
+    }
+    
+    // 3. Set Parameters
+    setParamNormalized(kParamBypass, savedBypass ? 1 : 0);
+    // setParamNormalized(kParamZoom, savedZoom);
+    setParamNormalized(kParamLevel, savedLevel);
+    
+    for (int bands = 0; bands < numBands; bands++)
+    {
+        setParamNormalized(kParamBand01_Used  + bands*bandSize, pBand[bands][bandUsed]);
+        setParamNormalized(kParamBand01_Type  + bands*bandSize, pBand[bands][bandType]);
+        setParamNormalized(kParamBand01_Freq  + bands*bandSize, pBand[bands][bandFreq]);
+        setParamNormalized(kParamBand01_Gain  + bands*bandSize, pBand[bands][bandGain]);
+        setParamNormalized(kParamBand01_Qlty  + bands*bandSize, pBand[bands][bandQlty]);
+    }
 
     return kResultOk;
 }
@@ -1377,71 +926,56 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
 tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
 {
     // Here you get the state of the controller
-
+    // fprintf (stdout, "GNRC_EQ_Controller::setState\n");
     if (!state)
         return kResultFalse;
 
     IBStreamer streamer(state, kLittleEndian);
-    
-    auto copyArray = [this](double dst[], double src[]) {
-        dst[bandIn]    = src[bandIn];
-        dst[bandHz]    = src[bandHz];
-        dst[bandQ]     = src[bandQ];
-        dst[banddB]    = src[banddB];
-        dst[bandType]  = src[bandType];
-        dst[bandOrder] = src[bandOrder];
-    };
 
+    // 1. Read Plain Values
     Vst::ParamValue savedZoom   = dftZoom/zoomNum;
     Vst::ParamValue savedLevel  = 0.0;
-    Vst::ParamValue savedOutput = 0.0;
     
-    ParamBand_Array savedBand1_Array = {1.0, nrmBand1Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand2_Array = {1.0, nrmBand2Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand3_Array = {1.0, nrmBand3Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand4_Array = {1.0, nrmBand4Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand5_Array = {1.0, nrmBand5Freq, nrmParamQlty, nrmParamGain, nrmParamType, nrmParamOrdr};
+    bandParamSet savedBand[numBands];
 
     if (streamer.readDouble(savedZoom  ) == false) savedZoom = dftZoom/zoomNum;
     if (streamer.readDouble(savedLevel ) == false) savedLevel = fLevel;
-    if (streamer.readDouble(savedOutput) == false) savedOutput = 0.0;
 
-    if (streamer.readDoubleArray(savedBand1_Array, bandSize) == false) copyArray(savedBand1_Array, fParamBand1_Array);
-    if (streamer.readDoubleArray(savedBand2_Array, bandSize) == false) copyArray(savedBand2_Array, fParamBand2_Array);
-    if (streamer.readDoubleArray(savedBand3_Array, bandSize) == false) copyArray(savedBand3_Array, fParamBand3_Array);
-    if (streamer.readDoubleArray(savedBand4_Array, bandSize) == false) copyArray(savedBand4_Array, fParamBand4_Array);
-    if (streamer.readDoubleArray(savedBand5_Array, bandSize) == false) copyArray(savedBand5_Array, fParamBand5_Array);
-
-    auto setParamNormArray = [this](double Array[], int num)
+    for (int bands = 0; bands < numBands; bands++)
     {
-        setParamNormalized(kParamBand1_In    + num, Array[bandIn] ? 1 : 0);
-        setParamNormalized(kParamBand1_Hz    + num, Array[bandHz]);
-        setParamNormalized(kParamBand1_Q     + num, Array[bandQ]);
-        setParamNormalized(kParamBand1_dB    + num, Array[banddB]);
-        setParamNormalized(kParamBand1_Type  + num, Array[bandType]);
-        setParamNormalized(kParamBand1_Order + num, Array[bandOrder]);
-    };
-
-    setParamNormalized(kParamZoom,   savedZoom);
-    setParamNormalized(kParamLevel,  savedLevel);
-    // setParamNormalized(kParamOutput, savedOutput);
-
-    setParamNormArray(savedBand1_Array, 0);
-    setParamNormArray(savedBand2_Array, 1);
-    setParamNormArray(savedBand3_Array, 2);
-    setParamNormArray(savedBand4_Array, 3);
-    setParamNormArray(savedBand5_Array, 4);
-
+        if (streamer.readInt32 (savedBand[bands].Used) == false) return kResultFalse;
+        if (streamer.readInt32 (savedBand[bands].Type) == false) return kResultFalse;
+        if (streamer.readDouble(savedBand[bands].Freq) == false) return kResultFalse;
+        if (streamer.readDouble(savedBand[bands].Gain) == false) return kResultFalse;
+        if (streamer.readDouble(savedBand[bands].Qlty) == false) return kResultFalse;
+    }
+    
+    // 2. Save as Norm Values
     fZoom   = savedZoom;
     fLevel  = savedLevel;
-    // fOutput = savedOutput;
-
-    copyArray(fParamBand1_Array, savedBand1_Array);
-    copyArray(fParamBand2_Array, savedBand2_Array);
-    copyArray(fParamBand3_Array, savedBand3_Array);
-    copyArray(fParamBand4_Array, savedBand4_Array);
-    copyArray(fParamBand5_Array, savedBand5_Array);
     
+    for (int bands = 0; bands < numBands; bands++)
+    {
+        pBand[bands][bandUsed] = savedBand[bands].Used;
+        pBand[bands][bandType] = paramType.ToNormalized(savedBand[bands].Type);
+        pBand[bands][bandFreq] = paramFreq.ToNormalized(savedBand[bands].Freq);
+        pBand[bands][bandGain] = paramGain.ToNormalized(savedBand[bands].Gain);
+        pBand[bands][bandQlty] = paramQlty.ToNormalized(savedBand[bands].Qlty);
+    }
+    
+    // 3. Set Parameters
+    setParamNormalized(kParamZoom,  savedZoom);
+    setParamNormalized(kParamLevel, savedLevel);
+    
+    for (int bands = 0; bands < numBands; bands++)
+    {
+        setParamNormalized(kParamBand01_Used  + bands*bandSize, pBand[bands][bandUsed]);
+        setParamNormalized(kParamBand01_Type  + bands*bandSize, pBand[bands][bandType]);
+        setParamNormalized(kParamBand01_Freq  + bands*bandSize, pBand[bands][bandFreq]);
+        setParamNormalized(kParamBand01_Gain  + bands*bandSize, pBand[bands][bandGain]);
+        setParamNormalized(kParamBand01_Qlty  + bands*bandSize, pBand[bands][bandQlty]);
+    }
+
     return kResultTrue;
 }
 
@@ -1450,7 +984,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
 {
     // Here you are asked to deliver the state of the controller (if needed)
     // Note: the real state of your plug-in is saved in the processor
-
+    // fprintf (stdout, "GNRC_EQ_Controller::getState\n");
     if (!state)
         return kResultFalse;
 
@@ -1458,33 +992,27 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
 
     fZoom   = getParamNormalized(kParamZoom);
     fLevel  = getParamNormalized(kParamLevel);
-    fOutput = getParamNormalized(kParamOutput);
     
-    auto getParamNormArray = [this](double Array[], int num)
+    for (int bands = 0; bands < numBands; bands++)
     {
-        Array[bandIn]    = getParamNormalized(kParamBand1_In    + num);
-        Array[bandHz]    = getParamNormalized(kParamBand1_Hz    + num);
-        Array[bandQ]     = getParamNormalized(kParamBand1_Q     + num);
-        Array[banddB]    = getParamNormalized(kParamBand1_dB    + num);
-        Array[bandType]  = getParamNormalized(kParamBand1_Type  + num);
-        Array[bandOrder] = getParamNormalized(kParamBand1_Order + num);
-    };
-    
-    getParamNormArray(fParamBand1_Array, 0);
-    getParamNormArray(fParamBand2_Array, 1);
-    getParamNormArray(fParamBand3_Array, 2);
-    getParamNormArray(fParamBand4_Array, 3);
-    getParamNormArray(fParamBand5_Array, 4);
+        pBand[bands][bandUsed] = getParamNormalized(kParamBand01_Used  + bands*bandSize);
+        pBand[bands][bandType] = getParamNormalized(kParamBand01_Type  + bands*bandSize);
+        pBand[bands][bandFreq] = getParamNormalized(kParamBand01_Freq  + bands*bandSize);
+        pBand[bands][bandGain] = getParamNormalized(kParamBand01_Gain  + bands*bandSize);
+        pBand[bands][bandQlty] = getParamNormalized(kParamBand01_Qlty  + bands*bandSize);
+    }
 
     streamer.writeDouble(fZoom);
     streamer.writeDouble(fLevel);
-    streamer.writeDouble(fOutput);
-
-    streamer.writeDoubleArray(fParamBand1_Array, bandSize);
-    streamer.writeDoubleArray(fParamBand2_Array, bandSize);
-    streamer.writeDoubleArray(fParamBand3_Array, bandSize);
-    streamer.writeDoubleArray(fParamBand4_Array, bandSize);
-    streamer.writeDoubleArray(fParamBand5_Array, bandSize);
+    
+    for (int bands = 0; bands < numBands; bands++)
+    {
+        streamer.writeInt32 (                      pBand[bands][bandUsed] > 0.5 ? 1 : 0);
+        streamer.writeInt32 (paramType.ToPlainList(pBand[bands][bandType]));
+        streamer.writeDouble(paramFreq.ToPlain    (pBand[bands][bandFreq]));
+        streamer.writeDouble(paramGain.ToPlain    (pBand[bands][bandGain]));
+        streamer.writeDouble(paramQlty.ToPlain    (pBand[bands][bandQlty]));
+    }
 
     return kResultTrue;
 }
@@ -1496,7 +1024,7 @@ IPlugView* PLUGIN_API GNRC_EQ_Controller::createView (FIDString name)
     if (FIDStringsEqual (name, Vst::ViewType::kEditor))
     {
         // create your editor here and return a IPlugView ptr of it
-        auto* view = new VSTGUI::VST3Editor (this, "view", "GNRC_EQ_editor.uidesc");
+        auto* view = new VSTGUI::VST3Editor (this, "Main", "GNRC_EQ_editor.uidesc");
         std::vector<double> _zoomFactors;
         _zoomFactors.push_back(0.50);
         _zoomFactors.push_back(0.75);
@@ -1521,36 +1049,15 @@ VSTGUI::IController* GNRC_EQ_Controller::createSubController (VSTGUI::UTF8String
     if (VSTGUI::UTF8StringView(name) == "EQCurveViewController")
     {
         EQCurveViewController* controller = new EQCurveViewController(editor, this);
-        controller->addBandParam(getParameterObject(kParamBand1_In),
-                                 getParameterObject(kParamBand1_Hz),
-                                 getParameterObject(kParamBand1_Q),
-                                 getParameterObject(kParamBand1_dB),
-                                 getParameterObject(kParamBand1_Type),
-                                 getParameterObject(kParamBand1_Order));
-        controller->addBandParam(getParameterObject(kParamBand2_In),
-                                 getParameterObject(kParamBand2_Hz),
-                                 getParameterObject(kParamBand2_Q),
-                                 getParameterObject(kParamBand2_dB),
-                                 getParameterObject(kParamBand2_Type),
-                                 getParameterObject(kParamBand2_Order));
-        controller->addBandParam(getParameterObject(kParamBand3_In),
-                                 getParameterObject(kParamBand3_Hz),
-                                 getParameterObject(kParamBand3_Q),
-                                 getParameterObject(kParamBand3_dB),
-                                 getParameterObject(kParamBand3_Type),
-                                 getParameterObject(kParamBand3_Order));
-        controller->addBandParam(getParameterObject(kParamBand4_In),
-                                 getParameterObject(kParamBand4_Hz),
-                                 getParameterObject(kParamBand4_Q),
-                                 getParameterObject(kParamBand4_dB),
-                                 getParameterObject(kParamBand4_Type),
-                                 getParameterObject(kParamBand4_Order));
-        controller->addBandParam(getParameterObject(kParamBand5_In),
-                                 getParameterObject(kParamBand5_Hz),
-                                 getParameterObject(kParamBand5_Q),
-                                 getParameterObject(kParamBand5_dB),
-                                 getParameterObject(kParamBand5_Type),
-                                 getParameterObject(kParamBand5_Order));
+        for (int bands = 0; bands < numBands; bands++)
+        {
+            controller->addBandParam(getParameterObject(kParamBand01_Used + bands*bandSize),
+                                     getParameterObject(kParamBand01_Type + bands*bandSize),
+                                     getParameterObject(kParamBand01_Freq + bands*bandSize),
+                                     getParameterObject(kParamBand01_Gain + bands*bandSize),
+                                     getParameterObject(kParamBand01_Qlty + bands*bandSize) );
+        }
+        
         controller->addLevelParam(getParameterObject(kParamLevel));
         controller->addBypassParam(getParameterObject(kParamBypass));
         addEQCurveViewController(controller);
@@ -1633,30 +1140,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::notify(Vst::IMessage* message)
     
     if (strcmp (message->getMessageID (), "GUI") == 0)
     {
-        if (!curveControllers.empty())
-        {
-            for (auto iter = curveControllers.begin(); iter != curveControllers.end(); iter++)
-            {
-                if (auto attributes = message->getAttributes ())
-                {
-                    const void* data;
-                    uint32 sizeInBytes;
-                    ParamValue getValue = 0.0;
-                    
-                    if (attributes->getFloat  ("projectSR", getValue) == kResultTrue) projectSR = getValue;
-                    if (attributes->getFloat  ("targetSR",  getValue) == kResultTrue) targetSR  = getValue;
-                    if (attributes->getBinary ("sample", data, sizeInBytes) == kResultTrue)
-                    {
-                        auto numSamples = sizeInBytes / sizeof(float);
-                        FFT.processBlock((float*)data, numSamples, 0);
-                        std::fill(fft_out, fft_out + numBins, 0.0);
-                        if (FFT.getData(fft_out))
-                            (*iter)->setFFTArray(fft_out, numSamples, projectSR);
-                        (*iter)->setEQsampleRate(targetSR);
-                    }
-                }
-            }
-        }
+        
         return kResultOk;
     }
 

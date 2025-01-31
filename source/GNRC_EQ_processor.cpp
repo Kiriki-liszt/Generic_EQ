@@ -47,9 +47,6 @@ tresult PLUGIN_API GNRC_EQ_Processor::initialize (FUnknown* context)
     /* If you don't need an event bus, you can remove the next line */
     //addEventInput (STR16 ("Event In"), 1);
 
-    std::fill_n(&OS_buff[0][0], maxChannel * Kaiser::maxTap, 0.0);
-    std::fill(OS_coef, OS_coef + maxChannel, 0.0);
-
     return kResultOk;
 }
 
@@ -57,75 +54,15 @@ tresult PLUGIN_API GNRC_EQ_Processor::initialize (FUnknown* context)
 tresult PLUGIN_API GNRC_EQ_Processor::terminate ()
 {
     // Here the Plug-in will be de-instantiated, last possibility to remove some memory!
-
+    // fprintf (stdout, "GNRC_EQ_Processor::terminate\n");
     //---do not forget to call parent ------
     return AudioEffect::terminate ();
 }
 
 //------------------------------------------------------------------------
-tresult PLUGIN_API GNRC_EQ_Processor::setBusArrangements(
-    Vst::SpeakerArrangement* inputs, int32 numIns,
-    Vst::SpeakerArrangement* outputs, int32 numOuts)
-{
-    if (numIns == 1 && numOuts == 1)
-    {
-        // the host wants Mono => Mono (or 1 channel -> 1 channel)
-        if (Vst::SpeakerArr::getChannelCount(inputs[0]) == 1 &&
-            Vst::SpeakerArr::getChannelCount(outputs[0]) == 1)
-        {
-            auto* bus = FCast<Vst::AudioBus>(audioInputs.at(0));
-            if (bus)
-            {
-                // check if we are Mono => Mono, if not we need to recreate the busses
-                if (bus->getArrangement() != inputs[0])
-                {
-                    getAudioInput(0)->setArrangement(inputs[0]);
-                    getAudioInput(0)->setName(STR16("Mono In"));
-                    getAudioOutput(0)->setArrangement(outputs[0]);
-                    getAudioOutput(0)->setName(STR16("Mono Out"));
-                }
-                return kResultOk;
-            }
-        }
-        // the host wants something else than Mono => Mono,
-        // in this case we are always Stereo => Stereo
-        else
-        {
-            auto* bus = FCast<Vst::AudioBus>(audioInputs.at(0));
-            if (bus)
-            {
-                tresult result = kResultFalse;
-
-                // the host wants 2->2 (could be LsRs -> LsRs)
-                if (Vst::SpeakerArr::getChannelCount(inputs[0]) == 2 &&
-                    Vst::SpeakerArr::getChannelCount(outputs[0]) == 2)
-                {
-                    getAudioInput(0)->setArrangement(inputs[0]);
-                    getAudioInput(0)->setName(STR16("Stereo In"));
-                    getAudioOutput(0)->setArrangement(outputs[0]);
-                    getAudioOutput(0)->setName(STR16("Stereo Out"));
-                    result = kResultTrue;
-                }
-                // the host want something different than 1->1 or 2->2 : in this case we want stereo
-                else if (bus->getArrangement() != Vst::SpeakerArr::kStereo)
-                {
-                    getAudioInput(0)->setArrangement(Vst::SpeakerArr::kStereo);
-                    getAudioInput(0)->setName(STR16("Stereo In"));
-                    getAudioOutput(0)->setArrangement(Vst::SpeakerArr::kStereo);
-                    getAudioOutput(0)->setName(STR16("Stereo Out"));
-                    result = kResultFalse;
-                }
-
-                return result;
-            }
-        }
-    }
-    return kResultFalse;
-}
-
-//------------------------------------------------------------------------
 tresult PLUGIN_API GNRC_EQ_Processor::setActive (TBool state)
 {
+    // fprintf (stdout, "GNRC_EQ_Processor::setActive\n");
     //--- called when the Plug-in is enable/disable (On/Off) -----
     return AudioEffect::setActive (state);
 }
@@ -133,6 +70,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setActive (TBool state)
 //------------------------------------------------------------------------
 tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
 {
+    // fprintf (stdout, "GNRC_EQ_Processor::process\n");
     Vst::IParameterChanges* paramChanges = data.inputParameterChanges;
 
     if (paramChanges)
@@ -149,56 +87,52 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
                 int32 sampleOffset;
                 int32 numPoints = paramQueue->getPointCount();
 
-                /*/*/
                 if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) == kResultTrue)
                 {
-                    switch (paramQueue->getParameterId()) {
+                    int key = paramQueue->getParameterId();
+                    int index = std::max((key - kParamBand01_Used) / bandSize, 0); 
+                    switch (key) {
                         case kParamBypass: bBypass = (value > 0.5f); break;
                         // case kParamZoom:   fZoom = value; break;
                         case kParamLevel:  fLevel = value; break;
-                        // case kParamOutput: fOutput = value; break;
                             
-                        case kParamBand1_In: band1[bandIn] = value; break;
-                        case kParamBand2_In: band2[bandIn] = value; break;
-                        case kParamBand3_In: band3[bandIn] = value; break;
-                        case kParamBand4_In: band4[bandIn] = value; break;
-                        case kParamBand5_In: band5[bandIn] = value; break;
-
-                        case kParamBand1_Hz: band1[bandHz] = paramFreq.ToPlain(value); break;
-                        case kParamBand2_Hz: band2[bandHz] = paramFreq.ToPlain(value); break;
-                        case kParamBand3_Hz: band3[bandHz] = paramFreq.ToPlain(value); break;
-                        case kParamBand4_Hz: band4[bandHz] = paramFreq.ToPlain(value); break;
-                        case kParamBand5_Hz: band5[bandHz] = paramFreq.ToPlain(value); break;
-
-                        case kParamBand1_Q: band1[bandQ] = paramQlty.ToPlain(value); break;
-                        case kParamBand2_Q: band2[bandQ] = paramQlty.ToPlain(value); break;
-                        case kParamBand3_Q: band3[bandQ] = paramQlty.ToPlain(value); break;
-                        case kParamBand4_Q: band4[bandQ] = paramQlty.ToPlain(value); break;
-                        case kParamBand5_Q: band5[bandQ] = paramQlty.ToPlain(value); break;
-
-                        case kParamBand1_dB: band1[banddB] = paramGain.ToPlain(value); break;
-                        case kParamBand2_dB: band2[banddB] = paramGain.ToPlain(value); break;
-                        case kParamBand3_dB: band3[banddB] = paramGain.ToPlain(value); break;
-                        case kParamBand4_dB: band4[banddB] = paramGain.ToPlain(value); break;
-                        case kParamBand5_dB: band5[banddB] = paramGain.ToPlain(value); break;
-
-                        case kParamBand1_Type: band1[bandType] = paramType.ToPlain(value); break;
-                        case kParamBand2_Type: band2[bandType] = paramType.ToPlain(value); break;
-                        case kParamBand3_Type: band3[bandType] = paramType.ToPlain(value); break;
-                        case kParamBand4_Type: band4[bandType] = paramType.ToPlain(value); break;
-                        case kParamBand5_Type: band5[bandType] = paramType.ToPlain(value); break;
-
-                        case kParamBand1_Order: band1[bandOrder] = paramOrdr.ToPlain(value); break;
-                        case kParamBand2_Order: band2[bandOrder] = paramOrdr.ToPlain(value); break;
-                        case kParamBand3_Order: band3[bandOrder] = paramOrdr.ToPlain(value); break;
-                        case kParamBand4_Order: band4[bandOrder] = paramOrdr.ToPlain(value); break;
-                        case kParamBand5_Order: band5[bandOrder] = paramOrdr.ToPlain(value); break;
+                        case kParamBand01_Used: case kParamBand02_Used: case kParamBand03_Used: case kParamBand04_Used: case kParamBand05_Used:
+                        case kParamBand06_Used: case kParamBand07_Used: case kParamBand08_Used: case kParamBand09_Used: case kParamBand10_Used:
+                        case kParamBand11_Used: case kParamBand12_Used: case kParamBand13_Used: case kParamBand14_Used: case kParamBand15_Used:
+                        case kParamBand16_Used: case kParamBand17_Used: case kParamBand18_Used: case kParamBand19_Used: case kParamBand20_Used:
+                            pBand[index][bandUsed]    = value; break;
+                            
+                        case kParamBand01_Type: case kParamBand02_Type: case kParamBand03_Type: case kParamBand04_Type: case kParamBand05_Type:
+                        case kParamBand06_Type: case kParamBand07_Type: case kParamBand08_Type: case kParamBand09_Type: case kParamBand10_Type:
+                        case kParamBand11_Type: case kParamBand12_Type: case kParamBand13_Type: case kParamBand14_Type: case kParamBand15_Type:
+                        case kParamBand16_Type: case kParamBand17_Type: case kParamBand18_Type: case kParamBand19_Type: case kParamBand20_Type:
+                            pBand[index][bandType]  = value; break;
+                            
+                        case kParamBand01_Freq: case kParamBand02_Freq: case kParamBand03_Freq: case kParamBand04_Freq: case kParamBand05_Freq:
+                        case kParamBand06_Freq: case kParamBand07_Freq: case kParamBand08_Freq: case kParamBand09_Freq: case kParamBand10_Freq:
+                        case kParamBand11_Freq: case kParamBand12_Freq: case kParamBand13_Freq: case kParamBand14_Freq: case kParamBand15_Freq:
+                        case kParamBand16_Freq: case kParamBand17_Freq: case kParamBand18_Freq: case kParamBand19_Freq: case kParamBand20_Freq:
+                            pBand[index][bandFreq]    = value; break;
+                            
+                        case kParamBand01_Gain: case kParamBand02_Gain: case kParamBand03_Gain: case kParamBand04_Gain: case kParamBand05_Gain:
+                        case kParamBand06_Gain: case kParamBand07_Gain: case kParamBand08_Gain: case kParamBand09_Gain: case kParamBand10_Gain:
+                        case kParamBand11_Gain: case kParamBand12_Gain: case kParamBand13_Gain: case kParamBand14_Gain: case kParamBand15_Gain:
+                        case kParamBand16_Gain: case kParamBand17_Gain: case kParamBand18_Gain: case kParamBand19_Gain: case kParamBand20_Gain:
+                            pBand[index][bandGain]    = value; break;
+                            
+                        case kParamBand01_Qlty: case kParamBand02_Qlty: case kParamBand03_Qlty: case kParamBand04_Qlty: case kParamBand05_Qlty:
+                        case kParamBand06_Qlty: case kParamBand07_Qlty: case kParamBand08_Qlty: case kParamBand09_Qlty: case kParamBand10_Qlty:
+                        case kParamBand11_Qlty: case kParamBand12_Qlty: case kParamBand13_Qlty: case kParamBand14_Qlty: case kParamBand15_Qlty:
+                        case kParamBand16_Qlty: case kParamBand17_Qlty: case kParamBand18_Qlty: case kParamBand19_Qlty: case kParamBand20_Qlty:
+                            pBand[index][bandQlty]     = value; break;
+                        
+                        default: break;
                     }
                 }
             }
         }
         call_after_parameter_changed ();
-    }
+    } // end if (paramChanges)
 
     if (data.numSamples <= 0)
         return kResultOk; // nothing to do
@@ -255,14 +189,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
             sendMessage (message);
         }
     }
-    {
-        if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
-        {
-            message->setMessageID ("GUI");
-            message->getAttributes()->setFloat ("targetSR", targetSR);
-            sendMessage (message);
-        }
-    }
+
     {
         auto output = data.outputs[0];
         if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
@@ -317,8 +244,14 @@ tresult PLUGIN_API GNRC_EQ_Processor::setupProcessing (Vst::ProcessSetup& newSet
     
     //fft_in.resize(newSetup.maxSamplesPerBlock+1, 0.0);
     
+    // setupProcessing should happen after setBusArr.
+    Vst::SpeakerArrangement arr;
+    getBusArrangement (Vst::BusDirections::kInput, 0, arr);
+    numChannels = static_cast<uint16_t> (Vst::SpeakerArr::getChannelCount (arr));
+    
+    svf.resize(numChannels);
     call_after_SR_changed (); // includes call_after_parameter_changed ()
-
+        
     return AudioEffect::setupProcessing (newSetup);
 }
 
@@ -344,50 +277,39 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     // called when we load a preset, the model has to be reloaded
     IBStreamer streamer(state, kLittleEndian);
     
-    // I started saving in Normalized, so have to keep saving in Normalized
-
+    // 1. Read Plain Values
     int32           savedBypass = 0;
     Vst::ParamValue savedZoom   = 0.0; // UNUSED, left for compatibility
     Vst::ParamValue savedLevel  = 0.0;
-    Vst::ParamValue savedOutput = 0.0; // UNUSED, left for compatibility
-
-    ParamBand_Array savedBand1_Array = {1.0, dftBand1Freq, dftParamQlty, dftParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand2_Array = {1.0, dftBand2Freq, dftParamQlty, dftParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand3_Array = {1.0, dftBand3Freq, dftParamQlty, dftParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand4_Array = {1.0, dftBand4Freq, dftParamQlty, dftParamGain, nrmParamType, nrmParamOrdr};
-    ParamBand_Array savedBand5_Array = {1.0, dftBand5Freq, dftParamQlty, dftParamGain, nrmParamType, nrmParamOrdr};
+    
+    bandParamSet savedBand[numBands];
 
     if (streamer.readInt32 (savedBypass) == false) return kResultFalse;
     if (streamer.readDouble(savedZoom  ) == false) return kResultFalse;
     if (streamer.readDouble(savedLevel ) == false) return kResultFalse;
-    if (streamer.readDouble(savedOutput) == false) return kResultFalse;
+    
+    for (int bands = 0; bands < numBands; bands++)
+    {
+        if (streamer.readInt32 (savedBand[bands].Used) == false) return kResultFalse;
+        if (streamer.readInt32 (savedBand[bands].Type) == false) return kResultFalse;
+        if (streamer.readDouble(savedBand[bands].Freq) == false) return kResultFalse;
+        if (streamer.readDouble(savedBand[bands].Gain) == false) return kResultFalse;
+        if (streamer.readDouble(savedBand[bands].Qlty) == false) return kResultFalse;
+    }
 
-    if (streamer.readDoubleArray(savedBand1_Array, bandSize) == false) return kResultFalse;
-    if (streamer.readDoubleArray(savedBand2_Array, bandSize) == false) return kResultFalse;
-    if (streamer.readDoubleArray(savedBand3_Array, bandSize) == false) return kResultFalse;
-    if (streamer.readDoubleArray(savedBand4_Array, bandSize) == false) return kResultFalse;
-    if (streamer.readDoubleArray(savedBand5_Array, bandSize) == false) return kResultFalse;
-
+    // 2. Save as Norm Values
     bBypass = savedBypass > 0;
     // fZoom   = savedZoom;
     fLevel  = savedLevel;
-    // fOutput = savedOutput;
     
-    auto copyNormToPlain = [this](double Plain[], double Norm[])
+    for (int bands = 0; bands < numBands; bands++)
     {
-        Plain[bandIn]    = Norm[bandIn];
-        Plain[bandHz]    = paramFreq.ToPlain(Norm[bandHz]);
-        Plain[bandQ]     = paramQlty.ToPlain(Norm[bandQ]);
-        Plain[banddB]    = paramGain.ToPlain(Norm[banddB]);
-        Plain[bandType]  = paramType.ToPlain(Norm[bandType]);
-        Plain[bandOrder] = paramOrdr.ToPlain(Norm[bandOrder]);
-    };
-    
-    copyNormToPlain(band1, savedBand1_Array);
-    copyNormToPlain(band2, savedBand2_Array);
-    copyNormToPlain(band3, savedBand3_Array);
-    copyNormToPlain(band4, savedBand4_Array);
-    copyNormToPlain(band5, savedBand5_Array);
+        pBand[bands][bandUsed] = savedBand[bands].Used;
+        pBand[bands][bandType] = paramType.ToNormalized(savedBand[bands].Type);
+        pBand[bands][bandFreq] = paramFreq.ToNormalized(savedBand[bands].Freq);
+        pBand[bands][bandGain] = paramGain.ToNormalized(savedBand[bands].Gain);
+        pBand[bands][bandQlty] = paramQlty.ToNormalized(savedBand[bands].Qlty);
+    }
     
     call_after_parameter_changed ();
 
@@ -402,31 +324,19 @@ tresult PLUGIN_API GNRC_EQ_Processor::getState (IBStream* state)
     // here we need to save the model
     IBStreamer streamer(state, kLittleEndian);
     
-    // I started saving in Normalized, so have to keep saving in Normalized
-    
+    // Save in Plain Values
     streamer.writeInt32(bBypass ? 1 : 0);
     streamer.writeDouble(fZoom);   // UNUSED, left for compatibility
     streamer.writeDouble(fLevel);
-    streamer.writeDouble(fOutput); // UNUSED, left for compatibility
     
-    auto writeDoubleArrayNorm = [&streamer](double Array[])
+    for (int bands = 0; bands < numBands; bands++)
     {
-        ParamBand_Array normArray = {
-            Array[bandIn],
-            paramFreq.ToNormalized(Array[bandHz]),
-            paramQlty.ToNormalized(Array[bandQ]),
-            paramGain.ToNormalized(Array[banddB]),
-            paramType.ToNormalized(Array[bandType]),
-            paramOrdr.ToNormalized(Array[bandOrder])
-        };
-        streamer.writeDoubleArray(normArray, bandSize);
-    };
-    
-    writeDoubleArrayNorm(band1);
-    writeDoubleArrayNorm(band2);
-    writeDoubleArrayNorm(band3);
-    writeDoubleArrayNorm(band4);
-    writeDoubleArrayNorm(band5);
+        streamer.writeInt32 (                      pBand[bands][bandUsed] > 0.5 ? 1 : 0);
+        streamer.writeInt32 (paramType.ToPlainList(pBand[bands][bandType]));
+        streamer.writeDouble(paramFreq.ToPlain    (pBand[bands][bandFreq]));
+        streamer.writeDouble(paramGain.ToPlain    (pBand[bands][bandGain]));
+        streamer.writeDouble(paramQlty.ToPlain    (pBand[bands][bandQlty]));
+    }
     
     return kResultOk;
 }
@@ -443,8 +353,6 @@ void GNRC_EQ_Processor::processSVF
 {
     Vst::Sample64 level = DecibelConverter::ToGain(paramGain.ToPlain(fLevel));
 
-    int32 oversampling = (fParamOS == overSample_2x) ? 2 : 1;
-
     for (int32 channel = 0; channel < numChannels; channel++)
     {
         int32 samples = 0;
@@ -453,46 +361,12 @@ void GNRC_EQ_Processor::processSVF
             Vst::Sample64 inputSample = inputs[channel][samples];
             Vst::Sample64 drySample = inputSample;
             inputSample *= level;
-
-            double up_x[4] = { 0.0, };
-            double up_y[4] = { 0.0, };
-
-            up_x[0] = inputSample;
-
-            // Process
-            for (int i = 0; i < oversampling; i++)
-            {
-                Vst::Sample64 overSampled = up_x[i];
-
-                double v1 = band1_svf[channel].computeSVF(overSampled);
-                double v2 = band2_svf[channel].computeSVF(v1);
-                double v3 = band3_svf[channel].computeSVF(v2);
-                double v4 = band4_svf[channel].computeSVF(v3);
-                double v5 = band5_svf[channel].computeSVF(v4);
-
-                up_y[i] = v5; // * gain;
-            }
-
-            // Downsampling
-            if (fParamOS == overSample_1x) inputSample = up_y[0];
-            else if (fParamOS == overSample_2x)
-            {
-                memmove(OS_buff[channel] + 2, OS_buff[channel], sizeofOsMove);
-                OS_buff[channel][1] = up_y[0];
-                OS_buff[channel][0] = up_y[1];
-                // transform_reduce works faster in double[], and slow in std::deque<double>
-                // but if loop order channel->sample, cache miss happens, and std::deque<double> works faster
-                // Well, it just depends case-by-case.
-                inputSample = std::transform_reduce(OS_coef, OS_coef + fir_size, OS_buff[channel] + 1, 0.0);
-            }
-
-            // Latency compensate
-            latencyDelayLine[channel].push_back(drySample);
-            Vst::Sample64 delayed = *(latencyDelayLine[channel].end() - 1 - currLatency);
-            latencyDelayLine[channel].pop_front();
+            
+            for (int bands = 0; bands < numBands; bands++)
+                inputSample = svf[channel][bands].computeSVF(inputSample);
 
             if (bBypass)
-                inputSample = delayed;
+                inputSample = drySample;
 
             outputs[channel][samples] = (SampleType)inputSample;
 
@@ -504,6 +378,7 @@ void GNRC_EQ_Processor::processSVF
 
 void GNRC_EQ_Processor::call_after_SR_changed ()
 {
+    /*
     if (projectSR <= 48000.0)
     {
         targetSR = 2 * projectSR;
@@ -524,18 +399,23 @@ void GNRC_EQ_Processor::call_after_SR_changed ()
     for (auto& iter : latencyDelayLine) { iter.resize(latency_Fir_x2, 0.0); std::fill(iter.begin(), iter.end(), 0.0); }
     
     //FFT.reset();
+     */
     
     call_after_parameter_changed ();
 };
 void GNRC_EQ_Processor::call_after_parameter_changed ()
 {
-    for(int ch = 0; ch < maxChannel; ch++)
+    for (auto& filter : svf)
     {
-        band1_svf[ch].setSVF(band1[bandIn], band1[bandHz], band1[bandQ], band1[banddB], band1[bandType], band1[bandOrder], targetSR);
-        band2_svf[ch].setSVF(band2[bandIn], band2[bandHz], band2[bandQ], band2[banddB], band2[bandType], band2[bandOrder], targetSR);
-        band3_svf[ch].setSVF(band3[bandIn], band3[bandHz], band3[bandQ], band3[banddB], band3[bandType], band3[bandOrder], targetSR);
-        band4_svf[ch].setSVF(band4[bandIn], band4[bandHz], band4[bandQ], band4[banddB], band4[bandType], band4[bandOrder], targetSR);
-        band5_svf[ch].setSVF(band5[bandIn], band5[bandHz], band5[bandQ], band5[banddB], band5[bandType], band5[bandOrder], targetSR);
+        for (int bands = 0; bands < numBands; bands++)
+        {
+            int In = pBand[bands][bandUsed] > 0.5 ? 1 : 0;
+            int Type = paramType.ToPlainList(pBand[bands][bandType]);
+            double Hz = paramFreq.ToPlain(pBand[bands][bandFreq]);
+            double dB = paramGain.ToPlain(pBand[bands][bandGain]);
+            double Q = paramQlty.ToPlain(pBand[bands][bandQlty]);
+            filter[bands].setSVF(In, Type, Hz, dB, Q, projectSR);
+        }
     }
 };
 

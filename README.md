@@ -4,7 +4,7 @@ Generic EQ is a minimum phase EQ for REW Auto EQ - Generic type.
 
 ## Features  
 
-24 bands for ablity to fully support REW EQ.  
+20+2 bands to fully support REW EQ.  
 
 | REW                | Generic EQ   |
 |--------------------|--------------|
@@ -18,8 +18,7 @@ Generic EQ is a minimum phase EQ for REW Auto EQ - Generic type.
 
 > Modal controls Q in time domain, so it's technically same as PK.  
 > Pass filters are butterworth, meaning Q = 0.7071   
-> Shelf 6dB, 12dB have fc at -3dB = 0.7071 point, while Shelf, Shelf Q have fc at middle(zero-crossing of phase)  
-> Do you use Notch and L-T, really?  
+> Shelf 6dB 12dB have fc at -3dB = 0.7071 point, while Shelf and Shelf Q have fc at middle(zero-crossing of phase)  
 
 Exact gain-q dependency to match REW EQ's curve.  
 
