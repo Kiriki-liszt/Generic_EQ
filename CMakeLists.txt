@@ -92,7 +92,7 @@ elseif(SMTG_WIN)
     target_sources(${target} 
         PRIVATE 
             resource/win32resource.rc
-            resource/again.rc
+            resource/GNRC_EQ.rc
     )
     if(MSVC)
         set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${target})
