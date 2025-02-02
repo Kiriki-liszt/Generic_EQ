@@ -128,6 +128,7 @@ v1.0.0.b : intial try.
 [D. W. Gunness, O. S. Chauhan, “Optimizing the Magnitude Response of Matched z-Transform Filters (“MZTi”) for Loudspeaker Equalization”](https://www.khabdha.org/wp-content/uploads/2008/03/optimizing-the-magnitude-response-of-mzt-filters-mzti-2007.pdf)  
 
 [Martin Vicanek. Matched Two-Pole Digital Shelving Filters. (23. March 2024).](https://vicanek.de/articles/2poleShelvingFits.pdf)  
+[Martin Vicanek. Matched Second Order Digital Filters. (14. February 2016).](https://www.vicanek.de/articles/BiquadFits.pdf)  
 
 ## Ref  
 
