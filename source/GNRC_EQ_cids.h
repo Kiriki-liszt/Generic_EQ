@@ -41,8 +41,8 @@ enum {
     kParamBand19_Used, kParamBand19_Type, kParamBand19_Freq, kParamBand19_Gain, kParamBand19_Qlty,
     kParamBand20_Used, kParamBand20_Type, kParamBand20_Freq, kParamBand20_Gain, kParamBand20_Qlty,
 
-    kParamBandX1_Used, kParamBandX1_Type, kParamBandX1_Freq, kParamBandX1_Gain, kParamBandX1_Qlty,
-    kParamBandX2_Used, kParamBandX2_Type, kParamBandX2_Freq, kParamBandX2_Gain, kParamBandX2_Qlty
+    kParamBandX1_Used, kParamBandX1_Pass, kParamBandX1_Freq, kParamBandX1_Xtyp, kParamBandX1_Ordr,
+    kParamBandX2_Used, kParamBandX2_Pass, kParamBandX2_Freq, kParamBandX2_Xtyp, kParamBandX2_Ordr
 };
 //------------------------------------------------------------------------
 } // namespace yg331

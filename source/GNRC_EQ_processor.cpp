@@ -90,7 +90,8 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
                 if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) == kResultTrue)
                 {
                     int key = paramQueue->getParameterId();
-                    int index = std::max((key - kParamBand01_Used) / bandSize, 0); 
+                    int index  = std::clamp( (key - kParamBand01_Used) / bandSize,             0, numBands - 1); // 0 - 19
+                    int xIndex = std::clamp(((key - kParamBand01_Used) / bandSize) - numBands, 0, numXover - 1); // 0 - 1
                     switch (key) {
                         case kParamBypass: bBypass = (value > 0.5f); break;
                         // case kParamZoom:   fZoom = value; break;
@@ -100,7 +101,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
                         case kParamBand06_Used: case kParamBand07_Used: case kParamBand08_Used: case kParamBand09_Used: case kParamBand10_Used:
                         case kParamBand11_Used: case kParamBand12_Used: case kParamBand13_Used: case kParamBand14_Used: case kParamBand15_Used:
                         case kParamBand16_Used: case kParamBand17_Used: case kParamBand18_Used: case kParamBand19_Used: case kParamBand20_Used:
-                            pBand[index][bandUsed]    = value; break;
+                            pBand[index][bandUsed]  = value; break;
                             
                         case kParamBand01_Type: case kParamBand02_Type: case kParamBand03_Type: case kParamBand04_Type: case kParamBand05_Type:
                         case kParamBand06_Type: case kParamBand07_Type: case kParamBand08_Type: case kParamBand09_Type: case kParamBand10_Type:
@@ -112,20 +113,35 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
                         case kParamBand06_Freq: case kParamBand07_Freq: case kParamBand08_Freq: case kParamBand09_Freq: case kParamBand10_Freq:
                         case kParamBand11_Freq: case kParamBand12_Freq: case kParamBand13_Freq: case kParamBand14_Freq: case kParamBand15_Freq:
                         case kParamBand16_Freq: case kParamBand17_Freq: case kParamBand18_Freq: case kParamBand19_Freq: case kParamBand20_Freq:
-                            pBand[index][bandFreq]    = value; break;
+                            pBand[index][bandFreq]  = value; break;
                             
                         case kParamBand01_Gain: case kParamBand02_Gain: case kParamBand03_Gain: case kParamBand04_Gain: case kParamBand05_Gain:
                         case kParamBand06_Gain: case kParamBand07_Gain: case kParamBand08_Gain: case kParamBand09_Gain: case kParamBand10_Gain:
                         case kParamBand11_Gain: case kParamBand12_Gain: case kParamBand13_Gain: case kParamBand14_Gain: case kParamBand15_Gain:
                         case kParamBand16_Gain: case kParamBand17_Gain: case kParamBand18_Gain: case kParamBand19_Gain: case kParamBand20_Gain:
-                            pBand[index][bandGain]    = value; break;
+                            pBand[index][bandGain]  = value; break;
                             
                         case kParamBand01_Qlty: case kParamBand02_Qlty: case kParamBand03_Qlty: case kParamBand04_Qlty: case kParamBand05_Qlty:
                         case kParamBand06_Qlty: case kParamBand07_Qlty: case kParamBand08_Qlty: case kParamBand09_Qlty: case kParamBand10_Qlty:
                         case kParamBand11_Qlty: case kParamBand12_Qlty: case kParamBand13_Qlty: case kParamBand14_Qlty: case kParamBand15_Qlty:
                         case kParamBand16_Qlty: case kParamBand17_Qlty: case kParamBand18_Qlty: case kParamBand19_Qlty: case kParamBand20_Qlty:
-                            pBand[index][bandQlty]     = value; break;
-                        
+                            pBand[index][bandQlty]  = value; break;
+                            
+                        case kParamBandX1_Used: case kParamBandX2_Used:
+                            pXovr[xIndex][bandUsed] = value; break;
+                            
+                        case kParamBandX1_Pass: case kParamBandX2_Pass:
+                            pXovr[xIndex][bandPass] = value; break;
+                            
+                        case kParamBandX1_Freq: case kParamBandX2_Freq:
+                            pXovr[xIndex][bandFreq] = value; break;
+                            
+                        case kParamBandX1_Xtyp: case kParamBandX2_Xtyp:
+                            pXovr[xIndex][bandXtyp] = value; break;
+                            
+                        case kParamBandX1_Ordr: case kParamBandX2_Ordr:
+                            pXovr[xIndex][bandOrdr] = value; break;
+
                         default: break;
                     }
                 }
@@ -250,6 +266,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setupProcessing (Vst::ProcessSetup& newSet
     numChannels = static_cast<uint16_t> (Vst::SpeakerArr::getChannelCount (arr));
     
     svf.resize(numChannels);
+    svfXover.resize(numChannels);
     call_after_SR_changed (); // includes call_after_parameter_changed ()
         
     return AudioEffect::setupProcessing (newSetup);
@@ -279,13 +296,14 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     
     // 1. Read Plain Values
     int32           savedBypass = 0;
-    Vst::ParamValue savedZoom   = 0.0; // UNUSED, left for compatibility
+    // Vst::ParamValue savedZoom   = 0.0; // UNUSED, left for compatibility
     Vst::ParamValue savedLevel  = 0.0;
     
     bandParamSet savedBand[numBands];
+    xovrParamSet savedXovr[numXover];
 
     if (streamer.readInt32 (savedBypass) == false) return kResultFalse;
-    if (streamer.readDouble(savedZoom  ) == false) return kResultFalse;
+    // if (streamer.readDouble(savedZoom  ) == false) return kResultFalse;
     if (streamer.readDouble(savedLevel ) == false) return kResultFalse;
     
     for (int bands = 0; bands < numBands; bands++)
@@ -295,6 +313,14 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
         if (streamer.readDouble(savedBand[bands].Freq) == false) return kResultFalse;
         if (streamer.readDouble(savedBand[bands].Gain) == false) return kResultFalse;
         if (streamer.readDouble(savedBand[bands].Qlty) == false) return kResultFalse;
+    }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        if (streamer.readInt32 (savedXovr[bands].Used) == false) return kResultFalse;
+        if (streamer.readInt32 (savedXovr[bands].Pass) == false) return kResultFalse;
+        if (streamer.readDouble(savedXovr[bands].Freq) == false) return kResultFalse;
+        if (streamer.readInt32 (savedXovr[bands].Xtyp) == false) return kResultFalse;
+        if (streamer.readInt32 (savedXovr[bands].Ordr) == false) return kResultFalse;
     }
 
     // 2. Save as Norm Values
@@ -309,6 +335,14 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
         pBand[bands][bandFreq] = paramFreq.ToNormalized(savedBand[bands].Freq);
         pBand[bands][bandGain] = paramGain.ToNormalized(savedBand[bands].Gain);
         pBand[bands][bandQlty] = paramQlty.ToNormalized(savedBand[bands].Qlty);
+    }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        pXovr[bands][bandUsed] = savedXovr[bands].Used;
+        pXovr[bands][bandPass] = paramPass.ToNormalized(savedXovr[bands].Pass);
+        pXovr[bands][bandFreq] = paramFreq.ToNormalized(savedXovr[bands].Freq);
+        pXovr[bands][bandXtyp] = paramXtyp.ToNormalized(savedXovr[bands].Xtyp);
+        pXovr[bands][bandOrdr] = paramOrdr.ToNormalized(savedXovr[bands].Ordr);
     }
     
     call_after_parameter_changed ();
@@ -326,7 +360,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::getState (IBStream* state)
     
     // Save in Plain Values
     streamer.writeInt32(bBypass ? 1 : 0);
-    streamer.writeDouble(fZoom);   // UNUSED, left for compatibility
+    // streamer.writeDouble(fZoom);   // UNUSED, left for compatibility
     streamer.writeDouble(fLevel);
     
     for (int bands = 0; bands < numBands; bands++)
@@ -336,6 +370,14 @@ tresult PLUGIN_API GNRC_EQ_Processor::getState (IBStream* state)
         streamer.writeDouble(paramFreq.ToPlain    (pBand[bands][bandFreq]));
         streamer.writeDouble(paramGain.ToPlain    (pBand[bands][bandGain]));
         streamer.writeDouble(paramQlty.ToPlain    (pBand[bands][bandQlty]));
+    }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        streamer.writeInt32 (                      pXovr[bands][bandUsed] > 0.5 ? 1 : 0);
+        streamer.writeInt32 (paramPass.ToPlainList(pXovr[bands][bandPass]));
+        streamer.writeDouble(paramFreq.ToPlain    (pXovr[bands][bandFreq]));
+        streamer.writeInt32 (paramXtyp.ToPlainList(pXovr[bands][bandXtyp]));
+        streamer.writeInt32 (paramOrdr.ToPlainList(pXovr[bands][bandOrdr]));
     }
     
     return kResultOk;
@@ -364,6 +406,9 @@ void GNRC_EQ_Processor::processSVF
             
             for (int bands = 0; bands < numBands; bands++)
                 inputSample = svf[channel][bands].computeSVF(inputSample);
+            
+            for (int bands = 0; bands < numXover; bands++)
+                inputSample = svfXover[channel][bands].computeXover(inputSample);
 
             if (bBypass)
                 inputSample = drySample;
@@ -378,29 +423,8 @@ void GNRC_EQ_Processor::processSVF
 
 void GNRC_EQ_Processor::call_after_SR_changed ()
 {
-    /*
-    if (projectSR <= 48000.0)
-    {
-        targetSR = 2 * projectSR;
-        fParamOS = overSample_2x;
-        currLatency = latency_Fir_x2;
-    }
-    else
-    {
-        targetSR = projectSR;
-        fParamOS = overSample_1x;
-        currLatency = 0;
-    }
-    
-    Kaiser::calcFilter(96000.0, 0.0, 24000.0, fir_size, 110.0, OS_coef); // half band filter
-    std::for_each(OS_coef, OS_coef + fir_size, [](double &n) { n *= 2.0; });
-    std::fill_n(&OS_buff[0][0], maxChannel * Kaiser::maxTap, 0.0);
-    
-    for (auto& iter : latencyDelayLine) { iter.resize(latency_Fir_x2, 0.0); std::fill(iter.begin(), iter.end(), 0.0); }
-    
     //FFT.reset();
-     */
-    
+
     call_after_parameter_changed ();
 };
 void GNRC_EQ_Processor::call_after_parameter_changed ()
@@ -409,12 +433,24 @@ void GNRC_EQ_Processor::call_after_parameter_changed ()
     {
         for (int bands = 0; bands < numBands; bands++)
         {
-            int In = pBand[bands][bandUsed] > 0.5 ? 1 : 0;
-            int Type = paramType.ToPlainList(pBand[bands][bandType]);
-            double Hz = paramFreq.ToPlain(pBand[bands][bandFreq]);
-            double dB = paramGain.ToPlain(pBand[bands][bandGain]);
-            double Q = paramQlty.ToPlain(pBand[bands][bandQlty]);
-            filter[bands].setSVF(In, Type, Hz, dB, Q, projectSR);
+            int    Used =                       pBand[bands][bandUsed] > 0.5 ? 1 : 0;
+            int    Type = paramType.ToPlainList(pBand[bands][bandType]);
+            double Freq = paramFreq.ToPlain    (pBand[bands][bandFreq]);
+            double Gain = paramGain.ToPlain    (pBand[bands][bandGain]);
+            double Qlty = paramQlty.ToPlain    (pBand[bands][bandQlty]);
+            filter[bands].setSVF(Used, Type, Freq, Gain, Qlty, projectSR);
+        }
+    }
+    for (auto& filter : svfXover)
+    {
+        for (int bands = 0; bands < numXover; bands++)
+        {
+            int    Used =                       pXovr[bands][bandUsed] > 0.5 ? 1 : 0;
+            int    Pass = paramPass.ToPlainList(pXovr[bands][bandPass]);
+            double Freq = paramFreq.ToPlain    (pXovr[bands][bandFreq]);
+            int    Xtyp = paramXtyp.ToPlainList(pXovr[bands][bandXtyp]);
+            int    Ordr = paramOrdr.ToPlainList(pXovr[bands][bandOrdr]);
+            filter[bands].setXover(Used, Pass, Freq, Xtyp, Ordr, projectSR);
         }
     }
 };

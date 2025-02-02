@@ -102,8 +102,14 @@ protected:
         {dftParamUsed, nrmParamType, nrmBand19Freq, nrmParamGain, nrmParamQlty},
         {dftParamUsed, nrmParamType, nrmBand20Freq, nrmParamGain, nrmParamQlty}
     }};
+    
+    std::array<std::array<ParamValue, bandSize>, numXover> pXovr = {{
+        {dftParamUsed, nrmParamPass, nrmBand01Freq, nrmParamXtyp, nrmParamOrdr},
+        {dftParamUsed, nrmParamPass, nrmBand02Freq, nrmParamXtyp, nrmParamOrdr}
+    }};
 
     std::vector<std::array<SVF_Generic, numBands>> svf; // vector size = numChannels
+    std::vector<std::array<SVF_xover,   numXover>> svfXover; // vector size = numChannels
 
     // plugin enviroment
     SampleRate projectSR = 48000.0;

@@ -80,9 +80,11 @@ protected:
     CColor  FFTLineColor;
     CColor  FFTFillColor;
     
-    yg331::bandParamSet band[yg331::numBands];
+    yg331::bandParamSet pband[yg331::numBands];
+    yg331::xovrParamSet xover[yg331::numXover];
     
     yg331::SVF_Generic  svf[yg331::numBands];
+    yg331::SVF_xover    svfXover[yg331::numXover];
 
     bool    byPass = false;
     double  level = 0.0;
@@ -252,8 +254,12 @@ protected:
         {dftParamUsed, nrmParamType, dftBand20Freq, dftParamGain, dftParamQlty}
     }};
     
+    std::array<std::array<ParamValue, bandSize>, numXover> pXovr = {{
+        {dftParamUsed, nrmParamPass, nrmBand01Freq, nrmParamXtyp, nrmParamOrdr},
+        {dftParamUsed, nrmParamPass, nrmBand02Freq, nrmParamXtyp, nrmParamOrdr}
+    }};
+    
     SampleRate projectSR = 48000.0;
-    SampleRate targetSR = 96000.0;
     
     // FFT
     FFTProcessor FFT;
@@ -299,13 +305,21 @@ public:
     
     void setEQsampleRate(double SR) {eqCurveView->setEQsampleRate(SR);}
     
-    void addBandParam(Parameter* pIn, Parameter* pType, Parameter* pHz, Parameter* pdB, Parameter* pQ)
+    void addBandParam(Parameter* pUsed, Parameter* pType, Parameter* pFreq, Parameter* pGain, Parameter* pQlty)
     {
-        if (pIn)    { pBand.push_back(pIn);    pIn->addDependent(this); }
-        if (pHz)    { pBand.push_back(pHz);    pHz->addDependent(this); }
-        if (pQ)     { pBand.push_back(pQ);     pQ ->addDependent(this); }
-        if (pdB)    { pBand.push_back(pdB);    pdB->addDependent(this); }
-        if (pType)  { pBand.push_back(pType);  pType->addDependent(this); }
+        if (pUsed) { pBand.push_back(pUsed); pUsed->addDependent(this); }
+        if (pType) { pBand.push_back(pType); pType->addDependent(this); }
+        if (pFreq) { pBand.push_back(pFreq); pFreq->addDependent(this); }
+        if (pGain) { pBand.push_back(pGain); pGain->addDependent(this); }
+        if (pQlty) { pBand.push_back(pQlty); pQlty->addDependent(this); }
+    }
+    void addXovrParam(Parameter* pUsed, Parameter* pPass, Parameter* pFreq, Parameter* pXtyp, Parameter* pOrdr)
+    {
+        if (pUsed) { pBand.push_back(pUsed); pUsed->addDependent(this); }
+        if (pPass) { pBand.push_back(pPass); pPass->addDependent(this); }
+        if (pFreq) { pBand.push_back(pFreq); pFreq->addDependent(this); }
+        if (pXtyp) { pBand.push_back(pXtyp); pXtyp->addDependent(this); }
+        if (pOrdr) { pBand.push_back(pOrdr); pOrdr->addDependent(this); }
     }
     void addLevelParam(Parameter* p)
     {
@@ -323,7 +337,6 @@ private:
     using UTF8String     = VSTGUI::UTF8String;
     using UIAttributes   = VSTGUI::UIAttributes;
     using IUIDescription = VSTGUI::IUIDescription;
-    
 
     // FObject
     void PLUGIN_API update (Steinberg::FUnknown* changedUnknown, Steinberg::int32 message) SMTG_OVERRIDE

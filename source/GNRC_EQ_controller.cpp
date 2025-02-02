@@ -49,43 +49,63 @@ EQCurveView::EQCurveView(const EQCurveView& v)
 
 void EQCurveView::setParamNorm(Steinberg::Vst::ParamID tag, Steinberg::Vst::ParamValue normValue)
 {
-    int index = std::max(((int)tag - yg331::kParamBand01_Used) / yg331::bandSize, 0);
+    int index  = std::clamp( ((int)tag - yg331::kParamBand01_Used) / yg331::bandSize,                    0, yg331::numBands - 1); // 0 - 19
+    int xIndex = std::clamp((((int)tag - yg331::kParamBand01_Used) / yg331::bandSize) - yg331::numBands, 0, yg331::numXover - 1); // 0 - 1
     switch (tag)
     {
         case yg331::kParamBand01_Used: case yg331::kParamBand02_Used: case yg331::kParamBand03_Used: case yg331::kParamBand04_Used: case yg331::kParamBand05_Used:
         case yg331::kParamBand06_Used: case yg331::kParamBand07_Used: case yg331::kParamBand08_Used: case yg331::kParamBand09_Used: case yg331::kParamBand10_Used:
         case yg331::kParamBand11_Used: case yg331::kParamBand12_Used: case yg331::kParamBand13_Used: case yg331::kParamBand14_Used: case yg331::kParamBand15_Used:
         case yg331::kParamBand16_Used: case yg331::kParamBand17_Used: case yg331::kParamBand18_Used: case yg331::kParamBand19_Used: case yg331::kParamBand20_Used:
-            band[index].Used = normValue; break;
+            pband[index].Used = normValue > 0.5 ? 1 : 0; break;
             
         case yg331::kParamBand01_Type: case yg331::kParamBand02_Type: case yg331::kParamBand03_Type: case yg331::kParamBand04_Type: case yg331::kParamBand05_Type:
         case yg331::kParamBand06_Type: case yg331::kParamBand07_Type: case yg331::kParamBand08_Type: case yg331::kParamBand09_Type: case yg331::kParamBand10_Type:
         case yg331::kParamBand11_Type: case yg331::kParamBand12_Type: case yg331::kParamBand13_Type: case yg331::kParamBand14_Type: case yg331::kParamBand15_Type:
         case yg331::kParamBand16_Type: case yg331::kParamBand17_Type: case yg331::kParamBand18_Type: case yg331::kParamBand19_Type: case yg331::kParamBand20_Type:
-            band[index].Type = yg331::paramType.ToPlain(normValue); break;
+            pband[index].Type = yg331::paramType.ToPlain(normValue); break;
             
         case yg331::kParamBand01_Freq: case yg331::kParamBand02_Freq: case yg331::kParamBand03_Freq: case yg331::kParamBand04_Freq: case yg331::kParamBand05_Freq:
         case yg331::kParamBand06_Freq: case yg331::kParamBand07_Freq: case yg331::kParamBand08_Freq: case yg331::kParamBand09_Freq: case yg331::kParamBand10_Freq:
         case yg331::kParamBand11_Freq: case yg331::kParamBand12_Freq: case yg331::kParamBand13_Freq: case yg331::kParamBand14_Freq: case yg331::kParamBand15_Freq:
         case yg331::kParamBand16_Freq: case yg331::kParamBand17_Freq: case yg331::kParamBand18_Freq: case yg331::kParamBand19_Freq: case yg331::kParamBand20_Freq:
-            band[index].Freq = yg331::paramFreq.ToPlain(normValue); break;
+            pband[index].Freq = yg331::paramFreq.ToPlain(normValue); break;
             
         case yg331::kParamBand01_Gain: case yg331::kParamBand02_Gain: case yg331::kParamBand03_Gain: case yg331::kParamBand04_Gain: case yg331::kParamBand05_Gain:
         case yg331::kParamBand06_Gain: case yg331::kParamBand07_Gain: case yg331::kParamBand08_Gain: case yg331::kParamBand09_Gain: case yg331::kParamBand10_Gain:
         case yg331::kParamBand11_Gain: case yg331::kParamBand12_Gain: case yg331::kParamBand13_Gain: case yg331::kParamBand14_Gain: case yg331::kParamBand15_Gain:
         case yg331::kParamBand16_Gain: case yg331::kParamBand17_Gain: case yg331::kParamBand18_Gain: case yg331::kParamBand19_Gain: case yg331::kParamBand20_Gain:
-            band[index].Gain = yg331::paramGain.ToPlain(normValue); break;
+            pband[index].Gain = yg331::paramGain.ToPlain(normValue); break;
             
         case yg331::kParamBand01_Qlty: case yg331::kParamBand02_Qlty: case yg331::kParamBand03_Qlty: case yg331::kParamBand04_Qlty: case yg331::kParamBand05_Qlty:
         case yg331::kParamBand06_Qlty: case yg331::kParamBand07_Qlty: case yg331::kParamBand08_Qlty: case yg331::kParamBand09_Qlty: case yg331::kParamBand10_Qlty:
         case yg331::kParamBand11_Qlty: case yg331::kParamBand12_Qlty: case yg331::kParamBand13_Qlty: case yg331::kParamBand14_Qlty: case yg331::kParamBand15_Qlty:
         case yg331::kParamBand16_Qlty: case yg331::kParamBand17_Qlty: case yg331::kParamBand18_Qlty: case yg331::kParamBand19_Qlty: case yg331::kParamBand20_Qlty:
-            band[index].Qlty = yg331::paramQlty.ToPlain(normValue); break;
+            pband[index].Qlty = yg331::paramQlty.ToPlain(normValue); break;
+            
+        case yg331::kParamBandX1_Used: case yg331::kParamBandX2_Used:
+            xover[xIndex].Used = normValue > 0.5 ? 1 : 0; break;
+            
+        case yg331::kParamBandX1_Pass: case yg331::kParamBandX2_Pass:
+            xover[xIndex].Pass = yg331::paramPass.ToPlain(normValue); break;
+            
+        case yg331::kParamBandX1_Freq: case yg331::kParamBandX2_Freq:
+            xover[xIndex].Freq = yg331::paramFreq.ToPlain(normValue); break;
+            
+        case yg331::kParamBandX1_Xtyp: case yg331::kParamBandX2_Xtyp:
+            xover[xIndex].Xtyp = yg331::paramXtyp.ToPlain(normValue); break;
+            
+        case yg331::kParamBandX1_Ordr: case yg331::kParamBandX2_Ordr:
+            xover[xIndex].Ordr = yg331::paramOrdr.ToPlain(normValue); break;
             
         default: break;
     }
+    
     for (int bands = 0; bands < yg331::numBands; bands++)
-        svf[bands].setSVF(band[bands].Used, band[bands].Type, band[bands].Freq, band[bands].Gain, band[bands].Qlty, EQ_SR);
+        svf[bands].setSVF(pband[bands].Used, pband[bands].Type, pband[bands].Freq, pband[bands].Gain, pband[bands].Qlty, EQ_SR);
+    
+    for (int bands = 0; bands < yg331::numXover; bands++)
+        svfXover[bands].setXover(xover[bands].Used, xover[bands].Pass, xover[bands].Freq, xover[bands].Xtyp, xover[bands].Ordr, EQ_SR);
 }
 
 #define cubic_hermite(A, B, C, D, t) \
@@ -147,9 +167,10 @@ static constexpr CColor color_20(175, 113, 112); // #af7170
 static constexpr CColor color_X1(122, 111, 161); // #7a6fa1
 static constexpr CColor color_X2(155, 166, 116); // #9ba674
 static constexpr CColor color_Line(239, 194, 82);
-CColor pallet[20] = {
+CColor pallet[yg331::numBands] = {
     color_01, color_02, color_03, color_04, color_05, color_06, color_07, color_08, color_09, color_10,
     color_11, color_12, color_13, color_14, color_15, color_16, color_17, color_18, color_19, color_20};
+CColor pallet_xovr[yg331::numXover] = {color_X1, color_X2};
 
 // overrides
 void EQCurveView::draw(CDrawContext* pContext) {
@@ -306,16 +327,15 @@ void EQCurveView::draw(CDrawContext* pContext) {
                 double freq = (std::max)((std::min)(tmp, MAX_FREQ), MIN_FREQ);
                 double dB = 20 * log10(svf[bands].mag_response(freq));
                 if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
-                {
                     dB = svf[bands].phs_response(freq);
-                }
+
                 each_band[bands].push_back(dB);
                 
                 double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
+                
                 if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
-                {
                     m = (((dB / M_PI) / 2) + 0.5);
-                }
+
                 double scy = m * r.getHeight();
 
                 if (byPass) scy = 0.5 * r.getHeight();
@@ -328,7 +348,7 @@ void EQCurveView::draw(CDrawContext* pContext) {
             // pContext->setFrameColor(getLineColor().setNormAlpha(0.5));
             CColor line = pallet[bands];
             // line.setNormAlpha(0.5);
-            if (svf[bands].getIn() == 0) line.setNormAlpha(0.0);
+            if (svf[bands].getUsed() == 0) line.setNormAlpha(0.0);
             pContext->setFrameColor(line);
             pContext->setDrawMode(VSTGUI::kAntiAliasing);
             pContext->setLineWidth(1.0);
@@ -355,10 +375,10 @@ void EQCurveView::draw(CDrawContext* pContext) {
                 double dB = each_band[bands][i];
                 
                 double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
+                
                 if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
-                {
                     m = (((dB / M_PI) / 2) + 0.5);
-                }
+
                 double scy = m * r.getHeight();
 
                 if (byPass) scy = 0.5 * r.getHeight();
@@ -371,10 +391,10 @@ void EQCurveView::draw(CDrawContext* pContext) {
             // pContext->setFrameColor(getLineColor().setNormAlpha(0.5));
             CColor line = pallet[bands];
             // line.setNormAlpha(0.5);
-            if (svf[bands].getIn() == 0) line.setNormAlpha(0.0);
+            if (svf[bands].getUsed() == 0) line.setNormAlpha(0.0);
             pContext->setFrameColor(line);
             line.setNormAlpha(0.2);
-            if (svf[bands].getIn() == 0) line.setNormAlpha(0.0);
+            if (svf[bands].getUsed() == 0) line.setNormAlpha(0.0);
             pContext->setFillColor(line);
             pContext->setDrawMode(VSTGUI::kAntiAliasing);
             pContext->setLineWidth(1.0);
@@ -383,6 +403,98 @@ void EQCurveView::draw(CDrawContext* pContext) {
             EQ_curve->forget();
         }
     }
+    
+    
+    
+    std::vector<double> xovr_band[yg331::numXover];
+    for (int bands = 0; bands < yg331::numXover; bands++)
+    {
+        VSTGUI::CGraphicsPath* EQ_curve = pContext->createGraphicsPath();
+        if (EQ_curve)
+        {
+            VSTGUI::CCoord y_mid = r.bottom - (r.getHeight() / 2.0);
+            EQ_curve->beginSubpath(VSTGUI::CPoint(r.left - 1, y_mid));
+            for (double x = -0.5; x <= r.getWidth() + 1; x+=0.5)
+            {
+                double tmp = MIN_FREQ * std::exp(FREQ_LOG_MAX * x / r.getWidth());
+                double freq = (std::max)((std::min)(tmp, MAX_FREQ), MIN_FREQ);
+                double dB = 20 * log10(svfXover[bands].mag_response(freq));
+
+                xovr_band[bands].push_back(dB);
+                
+                double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
+                
+                if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
+                    m = (((dB / M_PI) / 2) + 0.5);
+
+                double scy = m * r.getHeight();
+
+                if (byPass) scy = 0.5 * r.getHeight();
+                EQ_curve->addLine(VSTGUI::CPoint(r.left + x, r.top + scy));
+            }
+            EQ_curve->addLine(VSTGUI::CPoint(r.right + 1, r.bottom + 1));
+            EQ_curve->addLine(VSTGUI::CPoint(r.left - 1, r.bottom + 1));
+            EQ_curve->closeSubpath();
+
+            // pContext->setFrameColor(getLineColor().setNormAlpha(0.5));
+            CColor line = pallet_xovr[bands];
+            // line.setNormAlpha(0.5);
+            if (svfXover[bands].getUsed() == 0) line.setNormAlpha(0.0);
+            pContext->setFrameColor(line);
+            pContext->setDrawMode(VSTGUI::kAntiAliasing);
+            pContext->setLineWidth(1.0);
+            pContext->setLineStyle(VSTGUI::kLineSolid);
+            if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
+            {
+                pContext->setLineStyle(VSTGUI::kLineOnOffDash);
+            }
+            pContext->drawGraphicsPath(EQ_curve, VSTGUI::CDrawContext::kPathStroked);
+            EQ_curve->forget();
+        }
+    }
+    for (int bands = 0; bands < yg331::numXover; bands++)
+    {
+        VSTGUI::CGraphicsPath* EQ_curve = pContext->createGraphicsPath();
+        if (EQ_curve)
+        {
+            VSTGUI::CCoord y_mid = r.bottom - (r.getHeight() / 2.0);
+            EQ_curve->beginSubpath(VSTGUI::CPoint(r.left - 1, y_mid));
+            for (double x = -0.5, i = 0; x <= r.getWidth() + 1; x+=0.5, i++)
+            {
+                double tmp = MIN_FREQ * std::exp(FREQ_LOG_MAX * x / r.getWidth());
+                double freq = (std::max)((std::min)(tmp, MAX_FREQ), MIN_FREQ);
+                double dB = xovr_band[bands][i];
+                
+                double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
+
+                double scy = m * r.getHeight();
+
+                if (byPass) scy = 0.5 * r.getHeight();
+                EQ_curve->addLine(VSTGUI::CPoint(r.left + x, r.top + scy));
+            }
+            EQ_curve->addLine(VSTGUI::CPoint(r.right + 1, y_mid));
+            EQ_curve->addLine(VSTGUI::CPoint(r.left - 1, y_mid));
+            EQ_curve->closeSubpath();
+
+            // pContext->setFrameColor(getLineColor().setNormAlpha(0.5));
+            CColor line = pallet_xovr[bands];
+            // line.setNormAlpha(0.5);
+            if (svfXover[bands].getUsed() == 0) line.setNormAlpha(0.0);
+            pContext->setFrameColor(line);
+            line.setNormAlpha(0.2);
+            if (svfXover[bands].getUsed() == 0) line.setNormAlpha(0.0);
+            pContext->setFillColor(line);
+            pContext->setDrawMode(VSTGUI::kAntiAliasing);
+            pContext->setLineWidth(1.0);
+            pContext->setLineStyle(VSTGUI::kLineSolid);
+            pContext->drawGraphicsPath(EQ_curve, VSTGUI::CDrawContext::kPathFilled);
+            EQ_curve->forget();
+        }
+    }
+    
+    
+    
+    
     VSTGUI::CGraphicsPath* EQ_curve = pContext->createGraphicsPath();
     if (EQ_curve)
     {
@@ -397,6 +509,11 @@ void EQCurveView::draw(CDrawContext* pContext) {
                 if (svf[bands].Type != yg331::SVF_Generic::tAllPass)
                     dB += each_band[bands].back();
                 each_band[bands].pop_back();
+            }
+            for (int bands = 0; bands < yg331::numXover; bands++)
+            {
+                dB += xovr_band[bands].back();
+                xovr_band[bands].pop_back();
             }
 
             double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
@@ -830,11 +947,83 @@ tresult PLUGIN_API GNRC_EQ_Controller::initialize (FUnknown* context)
         
         UString128 title_Qlty;
         title_Qlty.assign(base);
-        title_Qlty.append(USTRING(" Q"));
+        title_Qlty.append(USTRING(" Qlty"));
         auto* Band_Q = new LogRangeParameter_noUnit(title_Qlty, bands * bandSize + kParamBand01_Qlty, STR16("Q"), minParamQlty, maxParamQlty, dftParamQlty, stepCount, flags);
         Band_Q->setPrecision(1);
         Band_Q->setUnitID(unitInfo.id);
         parameters.addParameter(Band_Q);
+    }
+    
+    for (int count = 0; count < numXover; count++)
+    {
+        UString128 base;
+        base.assign("Xover ");
+        UString128 bandNumber;
+        bandNumber.printInt(count+1);
+        base.append(bandNumber);
+        
+        Vst::UnitInfo unitInfo;
+        Vst::Unit* unit; // create a unit for each bands
+        unitInfo.id = numBands + count + 1;
+        unitInfo.parentUnitId = Steinberg::Vst::kRootUnitId;    // attached to the root unit
+        Steinberg::UString (unitInfo.name, USTRINGSIZE (unitInfo.name)).assign (base);
+        unitInfo.programListId = Steinberg::Vst::kNoProgramListId;
+        unit = new Vst::Unit (unitInfo);
+        addUnit (unit);
+        
+        stepCount = 1;
+        defaultVal = 0;
+        flags = Vst::ParameterInfo::kCanAutomate;
+        
+        UString128 title_Used;
+        title_Used.assign(base);
+        title_Used.append(USTRING(" Used"));
+        parameters.addParameter(title_Used, nullptr, stepCount, defaultVal, flags, count * bandSize + kParamBandX1_Used, unitInfo.id);
+        
+        flags = Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList;
+        
+        UString128 title_Pass;
+        title_Pass.assign(base);
+        title_Pass.append(USTRING(" Pass"));
+        auto* Band_Pass = new Vst::StringListParameter(title_Pass, count * bandSize + kParamBandX1_Pass, STR16(""), flags);
+        for (int i = 0; i < SVF_xover::pSize; i++)
+            Band_Pass->appendString(SVF_xover::Pass_Types[i]);
+        Band_Pass->getInfo().defaultNormalizedValue = nrmParamType;
+        Band_Pass->setUnitID(unitInfo.id);
+        parameters.addParameter(Band_Pass);
+        
+        stepCount = 0;
+        flags = Vst::ParameterInfo::kCanAutomate;
+        
+        UString128 title_Freq;
+        title_Freq.assign(base);
+        title_Freq.append(USTRING(" Freq"));
+        auto* Band_Freq = new LogRangeParameter_noUnit(title_Freq, count * bandSize + kParamBandX1_Freq, STR("Hz"), minParamFreq, maxParamFreq, dftBandFreq[count], stepCount, flags);
+        Band_Freq->setPrecision(1);
+        Band_Freq->setUnitID(unitInfo.id);
+        parameters.addParameter(Band_Freq);
+        
+        flags = Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList;
+        
+        UString128 title_Type;
+        title_Type.assign(base);
+        title_Type.append(USTRING(" Type"));
+        auto* Band_Type = new Vst::StringListParameter(title_Type, count * bandSize + kParamBandX1_Xtyp, STR16(""), flags);
+        for (int i = 0; i < SVF_xover::tSize; i++)
+            Band_Type->appendString(SVF_xover::Filter_Types[i]);
+        Band_Type->getInfo().defaultNormalizedValue = nrmParamType;
+        Band_Type->setUnitID(unitInfo.id);
+        parameters.addParameter(Band_Type);
+        
+        UString128 title_Ordr;
+        title_Ordr.assign(base);
+        title_Ordr.append(USTRING(" Order"));
+        auto* Band_Ordr = new Vst::StringListParameter(title_Ordr, count * bandSize + kParamBandX1_Ordr, STR16(""), flags);
+        for (int i = 0; i < SVF_xover::oSize; i++)
+            Band_Ordr->appendString(SVF_xover::Filter_Order[i]);
+        Band_Ordr->getInfo().defaultNormalizedValue = nrmParamType;
+        Band_Ordr->setUnitID(unitInfo.id);
+        parameters.addParameter(Band_Ordr);
     }
     
     // GUI only parameter
@@ -866,20 +1055,23 @@ tresult PLUGIN_API GNRC_EQ_Controller::terminate ()
 tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
 {
     // Here you get the state of the component (Processor part)
+    // fprintf (stdout, "GNRC_EQ_Controller::setComponentState\n");
+    
     if (!state)
         return kResultFalse;
-    // fprintf (stdout, "GNRC_EQ_Controller::setComponentState\n");
+    
     IBStreamer streamer(state, kLittleEndian);
 
     // 1. Read Plain Values
     int32           savedBypass = 0;
-    Vst::ParamValue savedZoom   = 0.0;
+    // Vst::ParamValue savedZoom   = 0.0;
     Vst::ParamValue savedLevel  = 0.0;
     
     bandParamSet savedBand[numBands];
+    xovrParamSet savedXovr[numXover];
 
     if (streamer.readInt32 (savedBypass) == false) return kResultFalse;
-    if (streamer.readDouble(savedZoom  ) == false) return kResultFalse;
+    // if (streamer.readDouble(savedZoom  ) == false) return kResultFalse;
     if (streamer.readDouble(savedLevel ) == false) return kResultFalse;
 
     for (int bands = 0; bands < numBands; bands++)
@@ -890,6 +1082,14 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
         if (streamer.readDouble(savedBand[bands].Gain) == false) return kResultFalse;
         if (streamer.readDouble(savedBand[bands].Qlty) == false) return kResultFalse;
     }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        if (streamer.readInt32 (savedXovr[bands].Used) == false) return kResultFalse;
+        if (streamer.readInt32 (savedXovr[bands].Pass) == false) return kResultFalse;
+        if (streamer.readDouble(savedXovr[bands].Freq) == false) return kResultFalse;
+        if (streamer.readInt32 (savedXovr[bands].Xtyp) == false) return kResultFalse;
+        if (streamer.readInt32 (savedXovr[bands].Ordr) == false) return kResultFalse;
+    }
     
     // 2. Save as Norm Values
     pBypass = savedBypass > 0;
@@ -898,11 +1098,19 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     
     for (int bands = 0; bands < numBands; bands++)
     {
-        pBand[bands][bandUsed] = savedBand[bands].Used;
+        pBand[bands][bandUsed] =                        savedBand[bands].Used;
         pBand[bands][bandType] = paramType.ToNormalized(savedBand[bands].Type);
         pBand[bands][bandFreq] = paramFreq.ToNormalized(savedBand[bands].Freq);
         pBand[bands][bandGain] = paramGain.ToNormalized(savedBand[bands].Gain);
         pBand[bands][bandQlty] = paramQlty.ToNormalized(savedBand[bands].Qlty);
+    }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        pXovr[bands][bandUsed] =                        savedXovr[bands].Used;
+        pXovr[bands][bandPass] = paramPass.ToNormalized(savedXovr[bands].Pass);
+        pXovr[bands][bandFreq] = paramFreq.ToNormalized(savedXovr[bands].Freq);
+        pXovr[bands][bandXtyp] = paramXtyp.ToNormalized(savedXovr[bands].Xtyp);
+        pXovr[bands][bandOrdr] = paramOrdr.ToNormalized(savedXovr[bands].Ordr);
     }
     
     // 3. Set Parameters
@@ -912,11 +1120,19 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     
     for (int bands = 0; bands < numBands; bands++)
     {
-        setParamNormalized(kParamBand01_Used  + bands*bandSize, pBand[bands][bandUsed]);
-        setParamNormalized(kParamBand01_Type  + bands*bandSize, pBand[bands][bandType]);
-        setParamNormalized(kParamBand01_Freq  + bands*bandSize, pBand[bands][bandFreq]);
-        setParamNormalized(kParamBand01_Gain  + bands*bandSize, pBand[bands][bandGain]);
-        setParamNormalized(kParamBand01_Qlty  + bands*bandSize, pBand[bands][bandQlty]);
+        setParamNormalized(kParamBand01_Used + bands*bandSize, pBand[bands][bandUsed]);
+        setParamNormalized(kParamBand01_Type + bands*bandSize, pBand[bands][bandType]);
+        setParamNormalized(kParamBand01_Freq + bands*bandSize, pBand[bands][bandFreq]);
+        setParamNormalized(kParamBand01_Gain + bands*bandSize, pBand[bands][bandGain]);
+        setParamNormalized(kParamBand01_Qlty + bands*bandSize, pBand[bands][bandQlty]);
+    }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        setParamNormalized(kParamBandX1_Used + bands*bandSize, pXovr[bands][bandUsed]);
+        setParamNormalized(kParamBandX1_Pass + bands*bandSize, pXovr[bands][bandPass]);
+        setParamNormalized(kParamBandX1_Freq + bands*bandSize, pXovr[bands][bandFreq]);
+        setParamNormalized(kParamBandX1_Xtyp + bands*bandSize, pXovr[bands][bandXtyp]);
+        setParamNormalized(kParamBandX1_Ordr + bands*bandSize, pXovr[bands][bandOrdr]);
     }
 
     return kResultOk;
@@ -937,6 +1153,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     Vst::ParamValue savedLevel  = 0.0;
     
     bandParamSet savedBand[numBands];
+    xovrParamSet savedXovr[numBands];
 
     if (streamer.readDouble(savedZoom  ) == false) savedZoom = dftZoom/zoomNum;
     if (streamer.readDouble(savedLevel ) == false) savedLevel = fLevel;
@@ -948,6 +1165,14 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
         if (streamer.readDouble(savedBand[bands].Freq) == false) return kResultFalse;
         if (streamer.readDouble(savedBand[bands].Gain) == false) return kResultFalse;
         if (streamer.readDouble(savedBand[bands].Qlty) == false) return kResultFalse;
+    }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        if (streamer.readInt32 (savedXovr[bands].Used) == false) return kResultFalse;
+        if (streamer.readInt32 (savedXovr[bands].Pass) == false) return kResultFalse;
+        if (streamer.readDouble(savedXovr[bands].Freq) == false) return kResultFalse;
+        if (streamer.readInt32 (savedXovr[bands].Xtyp) == false) return kResultFalse;
+        if (streamer.readInt32 (savedXovr[bands].Ordr) == false) return kResultFalse;
     }
     
     // 2. Save as Norm Values
@@ -962,6 +1187,14 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
         pBand[bands][bandGain] = paramGain.ToNormalized(savedBand[bands].Gain);
         pBand[bands][bandQlty] = paramQlty.ToNormalized(savedBand[bands].Qlty);
     }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        pXovr[bands][bandUsed] = savedXovr[bands].Used;
+        pXovr[bands][bandPass] = paramPass.ToNormalized(savedXovr[bands].Pass);
+        pXovr[bands][bandFreq] = paramFreq.ToNormalized(savedXovr[bands].Freq);
+        pXovr[bands][bandXtyp] = paramXtyp.ToNormalized(savedXovr[bands].Xtyp);
+        pXovr[bands][bandOrdr] = paramOrdr.ToNormalized(savedXovr[bands].Ordr);
+    }
     
     // 3. Set Parameters
     setParamNormalized(kParamZoom,  savedZoom);
@@ -974,6 +1207,14 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
         setParamNormalized(kParamBand01_Freq  + bands*bandSize, pBand[bands][bandFreq]);
         setParamNormalized(kParamBand01_Gain  + bands*bandSize, pBand[bands][bandGain]);
         setParamNormalized(kParamBand01_Qlty  + bands*bandSize, pBand[bands][bandQlty]);
+    }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        setParamNormalized(kParamBandX1_Used + bands*bandSize, pXovr[bands][bandUsed]);
+        setParamNormalized(kParamBandX1_Pass + bands*bandSize, pXovr[bands][bandPass]);
+        setParamNormalized(kParamBandX1_Freq + bands*bandSize, pXovr[bands][bandFreq]);
+        setParamNormalized(kParamBandX1_Xtyp + bands*bandSize, pXovr[bands][bandXtyp]);
+        setParamNormalized(kParamBandX1_Ordr + bands*bandSize, pXovr[bands][bandOrdr]);
     }
 
     return kResultTrue;
@@ -992,7 +1233,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
 
     fZoom   = getParamNormalized(kParamZoom);
     fLevel  = getParamNormalized(kParamLevel);
-    
+
     for (int bands = 0; bands < numBands; bands++)
     {
         pBand[bands][bandUsed] = getParamNormalized(kParamBand01_Used  + bands*bandSize);
@@ -1001,10 +1242,18 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
         pBand[bands][bandGain] = getParamNormalized(kParamBand01_Gain  + bands*bandSize);
         pBand[bands][bandQlty] = getParamNormalized(kParamBand01_Qlty  + bands*bandSize);
     }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        pXovr[bands][bandUsed] = getParamNormalized(kParamBandX1_Used  + bands*bandSize);
+        pXovr[bands][bandPass] = getParamNormalized(kParamBandX1_Pass  + bands*bandSize);
+        pXovr[bands][bandFreq] = getParamNormalized(kParamBandX1_Freq  + bands*bandSize);
+        pXovr[bands][bandXtyp] = getParamNormalized(kParamBandX1_Xtyp  + bands*bandSize);
+        pXovr[bands][bandOrdr] = getParamNormalized(kParamBandX1_Ordr  + bands*bandSize);
+    }
 
     streamer.writeDouble(fZoom);
     streamer.writeDouble(fLevel);
-    
+
     for (int bands = 0; bands < numBands; bands++)
     {
         streamer.writeInt32 (                      pBand[bands][bandUsed] > 0.5 ? 1 : 0);
@@ -1012,6 +1261,14 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
         streamer.writeDouble(paramFreq.ToPlain    (pBand[bands][bandFreq]));
         streamer.writeDouble(paramGain.ToPlain    (pBand[bands][bandGain]));
         streamer.writeDouble(paramQlty.ToPlain    (pBand[bands][bandQlty]));
+    }
+    for (int bands = 0; bands < numXover; bands++)
+    {
+        streamer.writeInt32 (                      pXovr[bands][bandUsed] > 0.5 ? 1 : 0);
+        streamer.writeInt32 (paramPass.ToPlainList(pXovr[bands][bandPass]));
+        streamer.writeDouble(paramFreq.ToPlain    (pXovr[bands][bandFreq]));
+        streamer.writeInt32 (paramXtyp.ToPlainList(pXovr[bands][bandXtyp]));
+        streamer.writeInt32 (paramOrdr.ToPlainList(pXovr[bands][bandOrdr]));
     }
 
     return kResultTrue;
@@ -1057,7 +1314,14 @@ VSTGUI::IController* GNRC_EQ_Controller::createSubController (VSTGUI::UTF8String
                                      getParameterObject(kParamBand01_Gain + bands*bandSize),
                                      getParameterObject(kParamBand01_Qlty + bands*bandSize) );
         }
-        
+        for (int bands = 0; bands < numXover; bands++)
+        {
+            controller->addXovrParam(getParameterObject(kParamBandX1_Used + bands*bandSize),
+                                     getParameterObject(kParamBandX1_Pass + bands*bandSize),
+                                     getParameterObject(kParamBandX1_Freq + bands*bandSize),
+                                     getParameterObject(kParamBandX1_Xtyp + bands*bandSize),
+                                     getParameterObject(kParamBandX1_Ordr + bands*bandSize) );
+        }
         controller->addLevelParam(getParameterObject(kParamLevel));
         controller->addBypassParam(getParameterObject(kParamBypass));
         addEQCurveViewController(controller);
