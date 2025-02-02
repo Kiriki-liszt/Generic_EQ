@@ -404,8 +404,6 @@ void EQCurveView::draw(CDrawContext* pContext) {
         }
     }
     
-    
-    
     std::vector<double> xovr_band[yg331::numXover];
     for (int bands = 0; bands < yg331::numXover; bands++)
     {
@@ -503,7 +501,7 @@ void EQCurveView::draw(CDrawContext* pContext) {
         EQ_curve->beginSubpath(VSTGUI::CPoint(r.right + 1, y_mid));
         for (double x = r.getWidth() + 1; x >= -0.5; x-=0.5)
         {
-            double dB = level;
+            double dB = 0.0;
             for (int bands = 0; bands < yg331::numBands; bands++)
             {
                 if (svf[bands].Type != yg331::SVF_Generic::tAllPass)
@@ -873,17 +871,17 @@ tresult PLUGIN_API GNRC_EQ_Controller::initialize (FUnknown* context)
     parameters.addParameter(STR16("Bypass"), nullptr, stepCount, defaultVal, flags, tag);
 
     flags = Vst::ParameterInfo::kCanAutomate;
-
-    stepCount = 0;
-
+    
     tag = kParamLevel;
+    stepCount = 0;
     auto* ParamLevel = new LinRangeParameter(STR16("Level"), tag, STR16("dB"), minParamGain, maxParamGain, dftParamGain, stepCount, flags);
     ParamLevel->setPrecision(1);
     parameters.addParameter(ParamLevel);
     
-    // STR16 == STR == u"string"
-    // auto s3 =  u"hello"; // const char16_t*, encoded as UTF-16 // char16_t -> std::u16string
-    // SMTG : char16 == char16_t
+    tag = kParamPhase;
+    stepCount = 1;
+    defaultVal = 0;
+    parameters.addParameter(STR16("Phase"), nullptr, stepCount, defaultVal, flags, tag);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1066,6 +1064,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     int32           savedBypass = 0;
     // Vst::ParamValue savedZoom   = 0.0;
     Vst::ParamValue savedLevel  = 0.0;
+    int32           savedPhase  = 0;
     
     bandParamSet savedBand[numBands];
     xovrParamSet savedXovr[numXover];
@@ -1073,6 +1072,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     if (streamer.readInt32 (savedBypass) == false) return kResultFalse;
     // if (streamer.readDouble(savedZoom  ) == false) return kResultFalse;
     if (streamer.readDouble(savedLevel ) == false) return kResultFalse;
+    if (streamer.readInt32 (savedPhase ) == false) return kResultFalse;
 
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1092,9 +1092,10 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     }
     
     // 2. Save as Norm Values
-    pBypass = savedBypass > 0;
+    bBypass = savedBypass > 0;
     // fZoom   = savedZoom;
     fLevel  = savedLevel;
+    bPhase  = savedPhase > 0;
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1117,6 +1118,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     setParamNormalized(kParamBypass, savedBypass ? 1 : 0);
     // setParamNormalized(kParamZoom, savedZoom);
     setParamNormalized(kParamLevel, savedLevel);
+    setParamNormalized(kParamPhase, savedPhase ? 1 : 0);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1151,12 +1153,14 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     // 1. Read Plain Values
     Vst::ParamValue savedZoom   = dftZoom/zoomNum;
     Vst::ParamValue savedLevel  = 0.0;
+    int32           savedPhase  = 0;
     
     bandParamSet savedBand[numBands];
     xovrParamSet savedXovr[numBands];
 
     if (streamer.readDouble(savedZoom  ) == false) savedZoom = dftZoom/zoomNum;
     if (streamer.readDouble(savedLevel ) == false) savedLevel = fLevel;
+    if (streamer.readInt32 (savedPhase ) == false) return kResultFalse;
 
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1178,6 +1182,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     // 2. Save as Norm Values
     fZoom   = savedZoom;
     fLevel  = savedLevel;
+    bPhase  = savedPhase > 0;
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1199,6 +1204,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     // 3. Set Parameters
     setParamNormalized(kParamZoom,  savedZoom);
     setParamNormalized(kParamLevel, savedLevel);
+    setParamNormalized(kParamPhase, savedPhase ? 1 : 0);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1233,6 +1239,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
 
     fZoom   = getParamNormalized(kParamZoom);
     fLevel  = getParamNormalized(kParamLevel);
+    bPhase  = getParamNormalized(kParamPhase);
 
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1253,6 +1260,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
 
     streamer.writeDouble(fZoom);
     streamer.writeDouble(fLevel);
+    streamer.writeInt32(bPhase ? 1 : 0);
 
     for (int bands = 0; bands < numBands; bands++)
     {

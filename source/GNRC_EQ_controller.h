@@ -227,8 +227,9 @@ protected:
     using UICurveControllerList = std::vector<EQCurveViewController*>;
     UICurveControllerList curveControllers;
 
-    TBool      pBypass = false;
+    TBool      bBypass = false;
     ParamValue fLevel  = 0.5;
+    TBool      bPhase  = false;
     ParamValue fZoom   = 2.0 / 6.0;
     
     std::array<std::array<double, bandSize>, numBands> pBand = {{

@@ -96,6 +96,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
                         case kParamBypass: bBypass = (value > 0.5f); break;
                         // case kParamZoom:   fZoom = value; break;
                         case kParamLevel:  fLevel = value; break;
+                        case kParamPhase:  bPhase = value; break;
                             
                         case kParamBand01_Used: case kParamBand02_Used: case kParamBand03_Used: case kParamBand04_Used: case kParamBand05_Used:
                         case kParamBand06_Used: case kParamBand07_Used: case kParamBand08_Used: case kParamBand09_Used: case kParamBand10_Used:
@@ -298,6 +299,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     int32           savedBypass = 0;
     // Vst::ParamValue savedZoom   = 0.0; // UNUSED, left for compatibility
     Vst::ParamValue savedLevel  = 0.0;
+    int32           savedPhase  = 0;
     
     bandParamSet savedBand[numBands];
     xovrParamSet savedXovr[numXover];
@@ -305,6 +307,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     if (streamer.readInt32 (savedBypass) == false) return kResultFalse;
     // if (streamer.readDouble(savedZoom  ) == false) return kResultFalse;
     if (streamer.readDouble(savedLevel ) == false) return kResultFalse;
+    if (streamer.readInt32 (savedPhase ) == false) return kResultFalse;
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -327,6 +330,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     bBypass = savedBypass > 0;
     // fZoom   = savedZoom;
     fLevel  = savedLevel;
+    bPhase  = savedPhase > 0;
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -362,6 +366,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::getState (IBStream* state)
     streamer.writeInt32(bBypass ? 1 : 0);
     // streamer.writeDouble(fZoom);   // UNUSED, left for compatibility
     streamer.writeDouble(fLevel);
+    streamer.writeInt32(bPhase ? 1 : 0);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -409,6 +414,9 @@ void GNRC_EQ_Processor::processSVF
             
             for (int bands = 0; bands < numXover; bands++)
                 inputSample = svfXover[channel][bands].computeXover(inputSample);
+            
+            if (bPhase)
+                inputSample = -inputSample;
 
             if (bBypass)
                 inputSample = drySample;

@@ -711,13 +711,13 @@ public:
     
     static constexpr double qltyLinkwitzReilyByOrder[oSize][numFlt] = {
         {BUTTERWORTH_noQ, 1.0, 1.0, 1.0}, // o6dBoct -> 12dboct
-        {BUTTERWORTH_noQ, 1.0, 1.0, 1.0}, // o12dBoct
+        {BUTTERWORTH_noQ, 1.0, 1.0, 1.0}, // o12dBoct                            // Phase flip needed
         {BUTTERWORTH_2_1, BUTTERWORTH_2_1, 0, 0}, // o18dBoct -> 24dboct
-        {BUTTERWORTH_2_1, BUTTERWORTH_2_1, 0, 0}, // o24dBoct
+        {BUTTERWORTH_2_1, BUTTERWORTH_2_1, 0, 0}, // o24dBoct                    // no flipped
         {BUTTERWORTH_3_1, BUTTERWORTH_3_2, BUTTERWORTH_3_2, 0}, // o30dBoct -> 36dboct
-        {BUTTERWORTH_3_1, BUTTERWORTH_3_2, BUTTERWORTH_3_2, 0}, // o36dBoct
+        {BUTTERWORTH_3_1, BUTTERWORTH_3_2, BUTTERWORTH_3_2, 0}, // o36dBoct      // Phase flip needed
         {BUTTERWORTH_4_1, BUTTERWORTH_4_2, BUTTERWORTH_4_1, BUTTERWORTH_4_2}, // o42dBoct -> 48dboct
-        {BUTTERWORTH_4_1, BUTTERWORTH_4_2, BUTTERWORTH_4_1, BUTTERWORTH_4_2}  // o48dBoct
+        {BUTTERWORTH_4_1, BUTTERWORTH_4_2, BUTTERWORTH_4_1, BUTTERWORTH_4_2}  // o48dBoct // no flipped
     };
     
     SVF_xover()
@@ -847,6 +847,9 @@ public:
         double sample = vin;
         for (int i = 0; i < numFlt; i++)
             sample = flt[i].computeSVF(sample);
+        if (Type == tLinkwitzRiley && Pass == pHigh)
+            if (Ordr == o12dBoct || Ordr == o36dBoct)
+                sample = -sample;
         return sample;
     }
     

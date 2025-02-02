@@ -77,7 +77,8 @@ protected:
     
     bool       bBypass = false;
     ParamValue fLevel  = 0.5;
-    ParamValue fZoom   = 2.0 / 6.0; // UNUSED
+    bool       bPhase  = false;
+    // ParamValue fZoom   = 2.0 / 6.0; // UNUSED
     
     // store in Norm Value
     std::array<std::array<ParamValue, bandSize>, numBands> pBand = {{
