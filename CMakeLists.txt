@@ -43,8 +43,6 @@ smtg_enable_vst3_sdk()
 smtg_add_vst3plugin(${target}
     source/version.h
     source/GNRC_EQ_cids.h
-    source/GNRC_EQ_fft.h           # added
-    source/GNRC_EQ_fft.cpp         # added
     source/GNRC_EQ_shared.h        # added
     source/GNRC_EQ_processor.h
     source/GNRC_EQ_processor.cpp

@@ -5,7 +5,6 @@
 #pragma once
 
 #include "GNRC_EQ_shared.h"
-#include "GNRC_EQ_fft.h"
 
 #include <array>
 
@@ -23,8 +22,6 @@ public:
     EQCurveView(const CRect& size, IControlListener* listener, int32_t tag, CBitmap* background );
     EQCurveView(const EQCurveView& v);
 
-    void setFFTArray(float* array, int sampleBlockSize, double sampleRate);
-
     // get/set Attributes
     virtual void setBackColor(CColor color) { if (BackColor != color) { BackColor = color; setDirty(true); } }
     CColor getBackColor() const { return BackColor; }
@@ -34,12 +31,6 @@ public:
 
     virtual void setLineColor(CColor color) { if (LineColor != color) { LineColor = color; setDirty(true); } }
     CColor getLineColor() const { return LineColor; }
-
-    virtual void setFFTLineColor(CColor color) { if (FFTLineColor != color) { FFTLineColor = color; setDirty(true); } }
-    CColor getFFTLineColor() const { return FFTLineColor; }
-
-    virtual void setFFTFillColor(CColor color) { if (FFTFillColor != color) { FFTFillColor = color; setDirty(true); } }
-    CColor getFFTFillColor() const { return FFTFillColor; }
     
     void setParamNorm(Steinberg::Vst::ParamID tag, Steinberg::Vst::ParamValue normValue);
     void setLevel(Steinberg::Vst::ParamValue normValue) {level = yg331::paramGain.ToPlain(normValue);}
@@ -71,14 +62,11 @@ protected:
     double FREQ_LOG_MAX = log(MAX_FREQ / MIN_FREQ);
     static SMTG_CONSTEXPR double ceiling     = 0.0;   // dB
     static SMTG_CONSTEXPR double noise_floor = -72.0; // dB
-    static SMTG_CONSTEXPR double DB_FFT_RANGE = ceiling - noise_floor; // dB
     static SMTG_CONSTEXPR double DB_EQ_RANGE = 15.0;
 
     CColor  BackColor;
     CColor  LineColor;
     CColor  BorderColor;
-    CColor  FFTLineColor;
-    CColor  FFTFillColor;
     
     yg331::bandParamSet pband[yg331::numBands];
     yg331::xovrParamSet xover[yg331::numXover];
@@ -88,11 +76,7 @@ protected:
 
     bool    byPass = false;
     double  level = 0.0;
-    double  EQ_SR = 48000.0;
-
-    float fft_linear[yg331::numBins] = { 0.0, };
-    float fft_RMS[yg331::numBins]    = { 0.0, };
-    float fft_freq[yg331::numBins]   = { 0.0, };
+    double  EQ_SR = 96000.0;
 };
 }
 
@@ -260,12 +244,7 @@ protected:
         {dftParamUsed, nrmParamPass, nrmBand02Freq, nrmParamXtyp, nrmParamOrdr}
     }};
     
-    SampleRate projectSR = 48000.0;
-    
-    // FFT
-    FFTProcessor FFT;
-    // alignas(16) std::vector<float> fft_out = { 0.0, }; // size = numBins
-    float fft_out alignas(16)[numBins] = {0.0, };
+    // SampleRate projectSR = 48000.0;
 };
 
 
@@ -297,11 +276,6 @@ public:
         if (pBypass) { pBypass->removeDependent(this); pBypass = nullptr; }
         
         mainController->removeEQCurveViewController(this);
-    }
-
-    void setFFTArray(float* array, int sampleBlockSize, double sampleRate)
-    {
-        eqCurveView->setFFTArray(array, sampleBlockSize, sampleRate);
     }
     
     void setEQsampleRate(double SR) {eqCurveView->setEQsampleRate(SR);}

@@ -46,6 +46,10 @@ tresult PLUGIN_API GNRC_EQ_Processor::initialize (FUnknown* context)
 
     /* If you don't need an event bus, you can remove the next line */
     //addEventInput (STR16 ("Event In"), 1);
+    
+    for (auto& it : OS_buff)
+        std::fill(it.begin(), it.end(), 0.0);
+    std::fill(OS_coef.begin(), OS_coef.end(), 0.0);
 
     return kResultOk;
 }
@@ -197,38 +201,6 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
             processSVF<Vst::Sample64>((Vst::Sample64**)in, (Vst::Sample64**)out, numChannels, getSampleRate, data.numSamples);
         }
     }
-    
-    {
-        if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
-        {
-            message->setMessageID ("GUI");
-            message->getAttributes()->setFloat ("projectSR", projectSR);
-            sendMessage (message);
-        }
-    }
-
-    {
-        auto output = data.outputs[0];
-        if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
-        {
-            message->setMessageID ("GUI");
-            std::vector<float> c;
-            if (numChannels == 2) { // Stereo
-                std::transform (output.channelBuffers32[0],
-                                output.channelBuffers32[0] + data.numSamples,
-                                output.channelBuffers32[1],
-                                std::back_inserter(c),
-                                []( const auto &x, const auto &y ) { return std::max( x, y ); });
-            }
-            else {
-                std::copy(output.channelBuffers32[0], output.channelBuffers32[0] + data.numSamples, std::back_inserter(c));
-            }
-            c.resize(data.numSamples, 0.0);
-            if (auto attributes = message->getAttributes())
-                attributes->setBinary ("sample", c.data(), sampleFramesSize);
-            sendMessage (message);
-        }
-    }
 
     return kResultOk;
 }
@@ -245,6 +217,7 @@ uint32 PLUGIN_API GNRC_EQ_Processor::getLatencySamples()
 tresult PLUGIN_API GNRC_EQ_Processor::setupProcessing (Vst::ProcessSetup& newSetup)
 {
     //--- called before any processing ----
+    // fprintf (stdout, "setupProcessing\n");
     
     /*
      createInstance
@@ -255,11 +228,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setupProcessing (Vst::ProcessSetup& newSet
      getLatencySamples
      */
     
-    // fprintf (stdout, "setupProcessing\n");
-    
     projectSR = newSetup.sampleRate;
-    
-    //fft_in.resize(newSetup.maxSamplesPerBlock+1, 0.0);
     
     // setupProcessing should happen after setBusArr.
     Vst::SpeakerArrangement arr;
@@ -268,8 +237,11 @@ tresult PLUGIN_API GNRC_EQ_Processor::setupProcessing (Vst::ProcessSetup& newSet
     
     svf.resize(numChannels);
     svfXover.resize(numChannels);
+    latencyDelayLine.resize(numChannels);
+    OS_buff.resize(numChannels);
+    
     call_after_SR_changed (); // includes call_after_parameter_changed ()
-        
+    
     return AudioEffect::setupProcessing (newSetup);
 }
 
@@ -399,7 +371,8 @@ void GNRC_EQ_Processor::processSVF
   )
 {
     Vst::Sample64 level = DecibelConverter::ToGain(paramGain.ToPlain(fLevel));
-
+    int32 oversampling = OS_plain[fParamOS]; 
+    
     for (int32 channel = 0; channel < numChannels; channel++)
     {
         int32 samples = 0;
@@ -409,17 +382,52 @@ void GNRC_EQ_Processor::processSVF
             Vst::Sample64 drySample = inputSample;
             inputSample *= level;
             
-            for (int bands = 0; bands < numBands; bands++)
-                inputSample = svf[channel][bands].computeSVF(inputSample);
+            double up_x[OS_plain[OS_num]] = { 0.0, };
+            double up_y[OS_plain[OS_num]] = { 0.0, };
+
+            up_x[0] = inputSample;
+
+            // Process
+            for (int i = 0; i < oversampling; i++)
+            {
+                Vst::Sample64 overSampled = up_x[i];
+
+                for (int bands = 0; bands < numBands; bands++)
+                    overSampled = svf[channel][bands].computeSVF(overSampled);
+                
+                for (int bands = 0; bands < numXover; bands++)
+                    overSampled = svfXover[channel][bands].computeXover(overSampled);
+
+                up_y[i] = overSampled;
+            }
             
-            for (int bands = 0; bands < numXover; bands++)
-                inputSample = svfXover[channel][bands].computeXover(inputSample);
+            if (fParamOS == OS_2x)
+            {
+                std::copy(OS_buff[channel].begin(), OS_buff[channel].end() - oversampling, OS_buff[channel].begin() + oversampling);
+                // std::copy(&up_y[oversampling - 1], &up_y[0], OS_buff[channel].begin());
+                // std::memmove(OS_buff[channel].data() + oversampling, OS_buff[channel].data(), sizeofDouble * (fir_size - oversampling));
+                OS_buff[channel][1] = up_y[0];
+                OS_buff[channel][0] = up_y[1];
+                // transform_reduce works faster in double[], and slow in std::deque<double>
+                // but if loop order channel->sample, cache miss happens, and std::deque<double> works faster
+                // Well, it just depends case-by-case.
+                inputSample = std::transform_reduce(OS_coef.begin(), OS_coef.end(), OS_buff[channel].data() + oversampling - 1, 0.0);
+            }
+            else // if (fParamOS == overSample_1x)
+            {
+                inputSample = up_y[0];
+            }
+
+            // Latency compensate
+            latencyDelayLine[channel].push_back(drySample);
+            Vst::Sample64 delayed = *(latencyDelayLine[channel].end() - 1 - currLatency);
+            latencyDelayLine[channel].pop_front();
             
             if (bPhase)
                 inputSample = -inputSample;
 
             if (bBypass)
-                inputSample = drySample;
+                inputSample = delayed;
 
             outputs[channel][samples] = (SampleType)inputSample;
 
@@ -431,7 +439,29 @@ void GNRC_EQ_Processor::processSVF
 
 void GNRC_EQ_Processor::call_after_SR_changed ()
 {
-    //FFT.reset();
+    if (projectSR <= 48000.0)
+    {
+        fParamOS = OS_2x;
+        targetSR = OS_plain[fParamOS] * projectSR;
+        
+        currLatency = latency_Fir_x2;
+    }
+    else
+    {
+        fParamOS = OS_1x;
+        targetSR = projectSR;
+        
+        currLatency = 0;
+    }
+    
+    Kaiser::calcFilter(96000.0, 0.0, 24000.0, fir_size, 100.0, OS_coef.data()); // half band filter
+    std::for_each(OS_coef.begin(), OS_coef.end(), [this](double &n) { n *= OS_plain[fParamOS]; });
+    
+    for (auto& it : OS_buff)
+        std::fill(it.begin(), it.end(), 0.0);
+    
+    for (auto& it : latencyDelayLine)
+        it.resize(latency_Fir_x2, 0.0);
 
     call_after_parameter_changed ();
 };
@@ -446,7 +476,7 @@ void GNRC_EQ_Processor::call_after_parameter_changed ()
             double Freq = paramFreq.ToPlain    (pBand[bands][bandFreq]);
             double Gain = paramGain.ToPlain    (pBand[bands][bandGain]);
             double Qlty = paramQlty.ToPlain    (pBand[bands][bandQlty]);
-            filter[bands].setSVF(Used, Type, Freq, Gain, Qlty, projectSR);
+            filter[bands].setSVF(Used, Type, Freq, Gain, Qlty, targetSR);
         }
     }
     for (auto& filter : svfXover)
@@ -458,7 +488,7 @@ void GNRC_EQ_Processor::call_after_parameter_changed ()
             double Freq = paramFreq.ToPlain    (pXovr[bands][bandFreq]);
             int    Xtyp = paramXtyp.ToPlainList(pXovr[bands][bandXtyp]);
             int    Ordr = paramOrdr.ToPlainList(pXovr[bands][bandOrdr]);
-            filter[bands].setXover(Used, Pass, Freq, Xtyp, Ordr, projectSR);
+            filter[bands].setXover(Used, Pass, Freq, Xtyp, Ordr, targetSR);
         }
     }
 };

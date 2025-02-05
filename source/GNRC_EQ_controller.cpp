@@ -27,8 +27,6 @@ EQCurveView::EQCurveView(
     BackColor = kWhiteCColor;
     LineColor = kBlackCColor;
     BorderColor = kBlackCColor;
-    FFTLineColor = kBlackCColor;
-    FFTFillColor = kBlackCColor;
     byPass = false;
     level = 0.0;
     idleRate = 60;
@@ -39,8 +37,6 @@ EQCurveView::EQCurveView(const EQCurveView& v)
     , BackColor(v.BackColor)
     , LineColor(v.LineColor)
     , BorderColor(v.BorderColor)
-    , FFTLineColor(v.FFTLineColor)
-    , FFTFillColor(v.FFTFillColor)
     , level(v.level)
     , byPass(v.byPass)
 {
@@ -106,42 +102,6 @@ void EQCurveView::setParamNorm(Steinberg::Vst::ParamID tag, Steinberg::Vst::Para
     
     for (int bands = 0; bands < yg331::numXover; bands++)
         svfXover[bands].setXover(xover[bands].Used, xover[bands].Pass, xover[bands].Freq, xover[bands].Xtyp, xover[bands].Ordr, EQ_SR);
-}
-
-#define cubic_hermite(A, B, C, D, t) \
-    (/*a0*/(D - C - A + B) * t * t * t + /*a1*/(A - B - D + C + A - B) * t * t + /*a2*/(C - A) * t + /*a3*/(B) )
-
-#define lanczos(x, a) \
-    (a * sin(M_PI * (double)x) * sin(M_PI * (double)x / a) / (M_PI * M_PI * (double)x * (double)x))
-
-#define lanczos_kernel(x, a) \
-    ((x == 0) ? ( 1.0 ) : ((-a < x) && (x < a) ? (lanczos(x, a)) : (0.0)))
-
-#define lanczos_interpolation(A, B, C, D, t) \
-    (A * lanczos_kernel((t + 1.0), 2) + B * lanczos_kernel(t, 2) + C * lanczos_kernel((t - 1.0), 2) + D * lanczos_kernel((t - 2.0), 2))
-
-#define lanczos_interpolation_6(Z, A, B, C, D, E, t) \
-    (Z * lanczos_kernel((t + 2.0), 3) + (A * lanczos_kernel((t + 1.0), 3) + B * lanczos_kernel(t, 3) + C * lanczos_kernel((t - 1.0), 3) + D * lanczos_kernel((t - 2.0), 3))  + E * lanczos_kernel((t - 3.0), 3))
-
-#define safe_bin(bin, x)   std::max(std::min((int)bin  + (int)x, (int)numBins   - 1) , 0)
-#define safe_band(band, x) std::max(std::min((int)band + (int)x, (int)MAX_BANDS - 1) , 0)
-
-void EQCurveView::setFFTArray(float* array, int sampleBlockSize, double sampleRate)
-{
-    // Unit frequency per bin, with sample rate
-    double freqBin_width = sampleRate / yg331::fftSize;
-    double coeff = exp(-1.0 / (0.3 * 0.001 * sampleRate));
-    // double coeff = exp(-1.0 * (double)sampleBlockSize / (0.03 * 0.001 * sampleRate)); // gets faster as block size gets large
-    // double coeff = exp(-1.0 / (0.03 * 0.001 * sampleRate * (double)sampleBlockSize)); // gets slower as block size gets large
-
-    double icoef = 1.0 - coeff;
-
-    for (int i = 0; i < yg331::numBins; ++i) {
-        if (std::isnan(array[i])) array[i] = 0.00000001;
-        fft_RMS[i] = (fft_RMS[i] * coeff) + (icoef * array[i]);
-        fft_linear[i] = fft_RMS[i];
-        fft_freq[i] = (i + 0.5) * freqBin_width;
-    }
 }
 
 static constexpr CColor color_01(121, 222, 82 ); // #79de52
@@ -265,54 +225,6 @@ void EQCurveView::draw(CDrawContext* pContext) {
         }
     }
 
-
-    VSTGUI::CGraphicsPath* FFT_curve = pContext->createGraphicsPath();
-    if (FFT_curve)
-    {
-        double y_start = mag_to_01(fft_linear[0], fft_freq[0]);
-        y_start = (std::max)((std::min)(y_start, 1.0), 0.0);
-        y_start *= r_height;
-        FFT_curve->beginSubpath(VSTGUI::CPoint(r.left - 1, r.bottom - y_start));
-        double x_last = 0.0;
-        // RAW
-        for (int bin = 0; bin < yg331::numBins; ++bin)
-        {
-            double x = freq_to_x(r_width, fft_freq[bin]);
-            x = (std::max)((std::min)(x, r_width), 0.0);
-            double y = mag_to_01(fft_linear[bin], fft_freq[bin]);
-            y = (std::max)((std::min)(y, 1.0), 0.0);
-            y *= r_height;
-            if (x - x_last > 0.1)
-            {
-                x_last = x;
-                FFT_curve->addLine(VSTGUI::CPoint(r.left + x, r.bottom - y));
-            }
-        }
-
-        FFT_curve->addLine(VSTGUI::CPoint(r.right + 1, r.bottom + 1));
-        FFT_curve->addLine(VSTGUI::CPoint(r.left - 1, r.bottom + 1));
-        FFT_curve->closeSubpath();
-
-
-        VSTGUI::CColor ff = getFFTFillColor();
-        ff.setNormAlpha(0.8);
-        pContext->setFrameColor(VSTGUI::kTransparentCColor);
-        pContext->setFillColor(ff);
-        pContext->setDrawMode(VSTGUI::kAntiAliasing);
-        pContext->setLineWidth(0.0);
-        pContext->setLineStyle(VSTGUI::kLineSolid);
-        pContext->drawGraphicsPath(FFT_curve, VSTGUI::CDrawContext::kPathFilled);
-
-
-        pContext->setFrameColor(getFFTLineColor());
-        pContext->setDrawMode(VSTGUI::kAntiAliasing);
-        pContext->setLineWidth(1.0);
-        pContext->setLineStyle(VSTGUI::kLineSolid);
-        pContext->drawGraphicsPath(FFT_curve, VSTGUI::CDrawContext::kPathStroked);
-
-        FFT_curve->forget();
-    }
-    
     std::vector<double> each_band[yg331::numBands];
     for (int bands = 0; bands < yg331::numBands; bands++)
     {
@@ -558,8 +470,6 @@ bool EQCurveView::sizeToFit() {
 static const std::string kAttrBackColor = "back-color";
 static const std::string kAttrBorderColor = "border-color";
 static const std::string kAttrLineColor = "line-color";
-static const std::string kAttrFFTLineColor = "FFT-line-color";
-static const std::string kAttrFFTFillColor = "FFT-fill-color";
 
 class MyEQCurveViewFactory : public ViewCreatorAdapter
 {
@@ -598,10 +508,6 @@ public:
             v->setBorderColor(color);
         if (UIViewCreator::stringToColor(attributes.getAttributeValue(kAttrLineColor), color, description))
             v->setLineColor(color);
-        if (UIViewCreator::stringToColor(attributes.getAttributeValue(kAttrFFTLineColor), color, description))
-            v->setFFTLineColor(color);
-        if (UIViewCreator::stringToColor(attributes.getAttributeValue(kAttrFFTFillColor), color, description))
-            v->setFFTFillColor(color);
 
         return true;
     }
@@ -611,8 +517,6 @@ public:
         attributeNames.emplace_back(kAttrBackColor);
         attributeNames.emplace_back(kAttrBorderColor);
         attributeNames.emplace_back(kAttrLineColor);
-        attributeNames.emplace_back(kAttrFFTLineColor);
-        attributeNames.emplace_back(kAttrFFTFillColor);
         return true;
     }
 
@@ -623,10 +527,6 @@ public:
         if (attributeName == kAttrBorderColor)
             return kColorType;
         if (attributeName == kAttrLineColor)
-            return kColorType;
-        if (attributeName == kAttrFFTLineColor)
-            return kColorType;
-        if (attributeName == kAttrFFTFillColor)
             return kColorType;
         return kUnknownType;
     }
@@ -656,16 +556,6 @@ public:
         else if (attributeName == kAttrLineColor)
         {
             UIViewCreator::colorToString(v->getLineColor(), stringValue, desc);
-            return true;
-        }
-        else if (attributeName == kAttrFFTLineColor)
-        {
-            UIViewCreator::colorToString(v->getFFTLineColor(), stringValue, desc);
-            return true;
-        }
-        else if (attributeName == kAttrFFTFillColor)
-        {
-            UIViewCreator::colorToString(v->getFFTFillColor(), stringValue, desc);
             return true;
         }
 

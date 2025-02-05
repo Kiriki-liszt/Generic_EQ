@@ -870,9 +870,97 @@ public:
     double Fs   = 48000.0;
 };
 
+
+//------------------------------------------------------------------------
+//  Kaiser-Bessel Filter designser for Oversampling
+//------------------------------------------------------------------------
+class Kaiser {
+public:
+    static constexpr int maxTap = 512;
+    
+    static inline double Ino(double x)
+    {
+        double d = 0, ds = 1, s = 1;
+        do
+        {
+            d += 2;
+            ds *= x * x / (d * d);
+            s += ds;
+        } while (ds > s * 1e-100);
+        return s;
+    };
+    
+    static void calcFilter(double Fs, double Fa, double Fb, int M, double Att, double dest [])
+    {
+        // Kaiser windowed FIR filter "DIGITAL SIGNAL PROCESSING, II" IEEE Press pp 123-126.
+        
+        int Np = (M - 1) / 2;
+        double A[maxTap] = { 0, };
+        double Alpha; // == pi * alpha (wikipedia)
+        double Inoalpha;
+        
+        A[0] = 2 * (Fb - Fa) / Fs;
+        
+        for (int j = 1; j <= Np; j++)
+            A[j] = (std::sin(2.0 * j * M_PI * Fb / Fs) - std::sin(2.0 * j * M_PI * Fa / Fs)) / (j * M_PI);
+        
+        if (Att < 21.0)
+            Alpha = 0;
+        else if (Att > 50.0)
+            Alpha = 0.1102 * (Att - 8.7);
+        else
+            Alpha = 0.5842 * pow((Att - 21), 0.4) + 0.07886 * (Att - 21);
+        
+        Inoalpha = Ino(Alpha);
+        
+        for (int j = 0; j <= Np; j++)
+        {
+            dest[Np + j] = A[j] * Ino(Alpha * std::sqrt(1.0 - ((double)(j * j) / (double)(Np * Np)))) / Inoalpha;
+        }
+        dest[Np + Np] = A[Np] * Ino(0.0) / Inoalpha; // ARM with optimizer level O3 returns NaN == sqrt(1.0 - n/n), while x64 does not...
+        for (int j = 0; j < Np; j++)
+        {
+            dest[j] = dest[M - 1 - j];
+        }
+    }
+    
+    static void calcFilter2(int length, double alpha, double dest [])
+    {
+        int N = length - 1;
+        float Alpha = M_PI * alpha;
+        float Inoalpha;
+        
+        Inoalpha = Ino(Alpha);
+        
+        for (int n = 0; n <= N; n++)
+        {
+            dest[n] = Ino(Alpha * std::sqrt(1.0 - (2.0 * (double)n / (double)N - 1.0) * (2.0 * (double)n / (double)N - 1.0))) / Inoalpha;
+        }
+        dest[0] = Ino(0.0) / Inoalpha; // ARM with optimizer level O3 returns NaN == sqrt(1.0 - n/n), while x64 does not...
+        dest[N] = Ino(0.0) / Inoalpha;
+        
+        float pwr = 0.0;
+        for (int i = 0; i < length; i++) {
+            pwr += dest[i];
+        }
+        pwr = 1.0 / pwr;
+        for (int i = 0; i < length; i++) {
+            dest[i] *= pwr;
+        }
+    }
+};
+
 //------------------------------------------------------------------------
 //  Min, Max, Default of Parameters
 //------------------------------------------------------------------------
+static SMTG_CONSTEXPR int OS_1x   = 0;
+static SMTG_CONSTEXPR int OS_2x   = 1;
+static SMTG_CONSTEXPR int OS_4x   = 2;
+static SMTG_CONSTEXPR int OS_8x   = 3;
+static SMTG_CONSTEXPR int OS_num  = 3;
+static SMTG_CONSTEXPR int OS_size = 4;
+static SMTG_CONSTEXPR int OS_plain[OS_size] = {1, 2, 4, 8};
+
 static SMTG_CONSTEXPR bool dftBypass          = false;
 
 static SMTG_CONSTEXPR ParamValue minParamFreq = 20.0;
