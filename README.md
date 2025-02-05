@@ -22,8 +22,6 @@ Generic EQ is a minimum phase EQ for REW Auto EQ - Generic type.
 
 Exact gain-q dependency to match REW EQ's curve.  
 
-Decramped using Martin Vicanek method.  
-
 Statefull filter design for better numerical stability.  
 
 Runs in double precision 64-bit internal processing. Also double precision input / output if supported.  
@@ -90,24 +88,8 @@ Generic EQ is using GPL v3 license.
 
 ![VST Logo](https://github.com/Kiriki-liszt/Sky_Blue_EQ4/assets/107096260/142e3c12-cd5f-415d-9b72-8b4f04419633)
 
-VSTSDK 3.7.9 used  
-VSTGUI 4.12 used  
-
-### PFFFT  
-
-PFFFT is work of Julien Pommier, with Copyright (c) 2013  Julien Pommier ( <pommier@modartt.com> )  
-It is under BSD-Like, and license is in the header at GNRC_EQ_fft.h.  
-
-### C++ Wrapper for pffft  
-
-C++ Wrapper for pffft if work of Justin Johnson, obtained at [https://www.kvraudio.com/forum/viewtopic.php?p=8726913#p8726913](https://www.kvraudio.com/forum/viewtopic.php?p=8726913#p8726913)  
-As other works of him are in MIT lisence, I assumed same.  
-The lisence is in the header at GNRC_EQ_fft.h.  
-
-### FFT handler with FIFO managment  
-
-It is work of Matthijs Hollemans, obtained at [https://github.com/hollance/fft-juce](https://github.com/hollance/fft-juce)  
-It is under MIT lisence, and you can find the license in the header at GNRC_EQ_fft.h.  
+VSTSDK 3.7.12 used  
+VSTGUI 4.14 used  
 
 ## Project Build  
 
@@ -141,4 +123,4 @@ v1.0.0.b : intial try.
 
 ## TODO  
 
-[] Orfandis
+[] Decramp using Martin Vicanek method.  
