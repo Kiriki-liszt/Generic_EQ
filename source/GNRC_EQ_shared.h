@@ -188,20 +188,20 @@ public:
     static constexpr int tNum           = 12;
     static constexpr int tSize          = 13;
 
-    static constexpr Steinberg::Vst::String128 Filter_Types[tSize] = {
-        STR16("Bell"),
-        STR16("Low Pass"),
-        STR16("High Pass"),
-        STR16("Low Pass 6"),
-        STR16("High Pass 6"),
-        STR16("Low Shelf"),
-        STR16("High Shelf"),
-        STR16("L Shelf 6"),
-        STR16("H Shelf 6"),
-        STR16("L Shelf 12"),
-        STR16("H Shelf 12"),
-        STR16("Notch"),
-        STR16("All Pass")
+    static constexpr Steinberg::tchar* Filter_Types[tSize] = {
+        (Steinberg::tchar*)STR16("Bell"),
+        (Steinberg::tchar*)STR16("Low Pass"),
+        (Steinberg::tchar*)STR16("High Pass"),
+        (Steinberg::tchar*)STR16("Low Pass 6"),
+        (Steinberg::tchar*)STR16("High Pass 6"),
+        (Steinberg::tchar*)STR16("Low Shelf"),
+        (Steinberg::tchar*)STR16("High Shelf"),
+        (Steinberg::tchar*)STR16("L Shelf 6"),
+        (Steinberg::tchar*)STR16("H Shelf 6"),
+        (Steinberg::tchar*)STR16("L Shelf 12"),
+        (Steinberg::tchar*)STR16("H Shelf 12"),
+        (Steinberg::tchar*)STR16("Notch"),
+        (Steinberg::tchar*)STR16("All Pass")
     };
 
     static constexpr int o6dBoct  = 0;
@@ -596,9 +596,9 @@ public:
     static constexpr int pHigh          = 1;
     static constexpr int pNum           = 1;
     static constexpr int pSize          = 2;
-    static constexpr Steinberg::Vst::String128 Pass_Types[pSize] = {
-        STR16("Low Pass"),
-        STR16("High Pass")
+    static constexpr Steinberg::tchar* Pass_Types[pSize] = {
+        (Steinberg::tchar*)STR16("Low Pass"),
+        (Steinberg::tchar*)STR16("High Pass")
     };
     
     static constexpr int tButterworth   = 0; // 6, 12, 18, 24, 30, 36, 42, 48
@@ -607,10 +607,10 @@ public:
     static constexpr int tNum           = 2; // Plain <-> Norm
     static constexpr int tSize          = 3; // Loops, array, ...
 
-    static constexpr Steinberg::Vst::String128 Filter_Types[tSize] = {
-        STR16("Butterworth"),
-        STR16("Bessel"),
-        STR16("Linkwitz–Riley")
+    static constexpr Steinberg::tchar* Filter_Types[tSize] = {
+        (Steinberg::tchar*)STR16("Butterworth"),
+        (Steinberg::tchar*)STR16("Bessel"),
+        (Steinberg::tchar*)STR16("Linkwitz–Riley")
     };
 
     static constexpr int o6dBoct  = 0; // 1st order
@@ -624,15 +624,15 @@ public:
     static constexpr int oNum     = 7; // Plain <-> Norm
     static constexpr int oSize    = 8; // Loops, array, ...
     
-    static constexpr Steinberg::Vst::String128 Filter_Order[oSize] = {
-        STR16(" 6dB/oct"),
-        STR16("12dB/oct"),
-        STR16("18dB/oct"),
-        STR16("24dB/oct"),
-        STR16("30dB/oct"),
-        STR16("36dB/oct"),
-        STR16("42dB/oct"),
-        STR16("48dB/oct")
+    static constexpr Steinberg::tchar* Filter_Order[oSize] = {
+        (Steinberg::tchar*)STR16(" 6dB/oct"),
+        (Steinberg::tchar*)STR16("12dB/oct"),
+        (Steinberg::tchar*)STR16("18dB/oct"),
+        (Steinberg::tchar*)STR16("24dB/oct"),
+        (Steinberg::tchar*)STR16("30dB/oct"),
+        (Steinberg::tchar*)STR16("36dB/oct"),
+        (Steinberg::tchar*)STR16("42dB/oct"),
+        (Steinberg::tchar*)STR16("48dB/oct")
     };
     
     static constexpr int usedFilterByOrder[oSize][numFlt] = {
