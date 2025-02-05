@@ -2,6 +2,9 @@
 
 Generic EQ is a minimum phase EQ for REW Auto EQ - Generic type.  
 
+Runs in double precision 64-bit internal processing. Also double precision input / output if supported.  
+At 44.1 kHz and 48 kHz sampling rates, it upsamples to 88.2 kHz or 96 kHz respectively to do all EQ processing with 17 sample latency.  
+
 ## Features  
 
 20+2 bands to fully support REW EQ.  
@@ -125,4 +128,4 @@ v1.0.0.b : intial try.
 
 ## TODO  
 
-[] Decramp using Martin Vicanek method.  
+[] Zero latency option - Decramp using Martin Vicanek method.  
