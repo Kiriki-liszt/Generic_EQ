@@ -104,6 +104,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
                         case kParamPhase:   bPhase = (value > 0.5f); break;
                         case kParamTarget:
                             fTarget = value;
+                            call_after_SR_changed ();
                             sendTextMessage("latency_changed");
                             break;
                             
