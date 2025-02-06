@@ -1320,7 +1320,7 @@ tresult GNRC_EQ_Controller::receiveText(const char* text)
         {
             if (auto componentHandler = getComponentHandler ())
             {
-                componentHandler->restartComponent (Vst::kReloadComponent);
+                componentHandler->restartComponent (Vst::kLatencyChanged);
                 // fprintf (stdout, "restartComponent\n");
             }
         }
