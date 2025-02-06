@@ -35,7 +35,14 @@ public:
     void setParamNorm(Steinberg::Vst::ParamID tag, Steinberg::Vst::ParamValue normValue);
     void setLevel(Steinberg::Vst::ParamValue normValue) {level = yg331::paramGain.ToPlain(normValue);}
     void setBypass(Steinberg::Vst::ParamValue normValue) {byPass = normValue == 0.0 ? false : true;}
-    void setEQsampleRate(double SR) {EQ_SR = SR;}
+    void setEQsampleRate(double SR) {
+        EQ_SR = SR;
+        for (int bands = 0; bands < yg331::numBands; bands++)
+            svf[bands].setSVF(pband[bands].Used, pband[bands].Type, pband[bands].Freq, pband[bands].Gain, pband[bands].Qlty, EQ_SR);
+        
+        for (int bands = 0; bands < yg331::numXover; bands++)
+            svfXover[bands].setXover(xover[bands].Used, xover[bands].Pass, xover[bands].Freq, xover[bands].Xtyp, xover[bands].Ordr, EQ_SR);
+    }
 
     // overrides
     void setDirty(bool state) override { CView::setDirty(state); };
@@ -130,6 +137,7 @@ public:
 
     // EditController
     Steinberg::tresult PLUGIN_API notify(Steinberg::Vst::IMessage* message) SMTG_OVERRIDE;
+    Steinberg::tresult PLUGIN_API receiveText(const char* text) SMTG_OVERRIDE;
     void PLUGIN_API update(Steinberg::FUnknown* changedUnknown, Steinberg::int32 message) SMTG_OVERRIDE;
     void editorAttached(Steinberg::Vst::EditorView* editor) SMTG_OVERRIDE; ///< called from EditorView if it was attached to a parent
     void editorRemoved (Steinberg::Vst::EditorView* editor) SMTG_OVERRIDE; ///< called from EditorView if it was removed from a parent
@@ -197,7 +205,8 @@ public:
         // DEF_INTERFACE (Vst::IXXX)
         DEF_INTERFACE (Steinberg::Vst::IUnitInfo)
     END_DEFINE_INTERFACES (EditController)
-    DELEGATE_REFCOUNT (EditController)
+    // DELEGATE_REFCOUNT (EditController)
+    DELEGATE_REFCOUNT (EditControllerEx1)
 
 //------------------------------------------------------------------------
 protected:
@@ -214,6 +223,7 @@ protected:
     TBool      bBypass = false;
     ParamValue fLevel  = 0.5;
     TBool      bPhase  = false;
+    ParamValue fTarget = OS_8x;
     ParamValue fZoom   = 2.0 / 6.0;
     
     std::array<std::array<double, bandSize>, numBands> pBand = {{
@@ -244,7 +254,7 @@ protected:
         {dftParamUsed, nrmParamPass, nrmBand02Freq, nrmParamXtyp, nrmParamOrdr}
     }};
     
-    // SampleRate projectSR = 48000.0;
+    SampleRate targetSR = 192000.0;
 };
 
 

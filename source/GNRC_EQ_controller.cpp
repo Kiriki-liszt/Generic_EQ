@@ -773,6 +773,14 @@ tresult PLUGIN_API GNRC_EQ_Controller::initialize (FUnknown* context)
     defaultVal = 0;
     parameters.addParameter(STR16("Phase"), nullptr, stepCount, defaultVal, flags, tag);
     
+    flags = Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList;
+    
+    auto* Band_Target = new Vst::StringListParameter(STR16("Target"), kParamTarget, STR16(""), flags);
+    for (int i = 0; i < OS_size; i++)
+        Band_Target->appendString(target_SR_names[i]);
+    Band_Target->getInfo().defaultNormalizedValue = 1.0;
+    parameters.addParameter(Band_Target);
+    
     for (int bands = 0; bands < numBands; bands++)
     {
         UString128 base;
@@ -955,6 +963,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     // Vst::ParamValue savedZoom   = 0.0;
     Vst::ParamValue savedLevel  = 0.0;
     int32           savedPhase  = 0;
+    int32           savedTarget = 0;
     
     bandParamSet savedBand[numBands];
     xovrParamSet savedXovr[numXover];
@@ -963,6 +972,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     // if (streamer.readDouble(savedZoom  ) == false) return kResultFalse;
     if (streamer.readDouble(savedLevel ) == false) return kResultFalse;
     if (streamer.readInt32 (savedPhase ) == false) return kResultFalse;
+    if (streamer.readInt32 (savedTarget) == false) return kResultFalse;
 
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -984,8 +994,9 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     // 2. Save as Norm Values
     bBypass = savedBypass > 0;
     // fZoom   = savedZoom;
-    fLevel  = savedLevel;
+    fLevel  = paramGain.ToNormalized(savedLevel);
     bPhase  = savedPhase > 0;
+    fTarget = paramTrgt.ToNormalized(savedTarget);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1005,10 +1016,11 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     }
     
     // 3. Set Parameters
-    setParamNormalized(kParamBypass, savedBypass ? 1 : 0);
-    // setParamNormalized(kParamZoom, savedZoom);
-    setParamNormalized(kParamLevel, savedLevel);
-    setParamNormalized(kParamPhase, savedPhase ? 1 : 0);
+    setParamNormalized(kParamBypass, bBypass ? 1 : 0);
+    // setParamNormalized(kParamZoom, fZoom);
+    setParamNormalized(kParamLevel,  fLevel);
+    setParamNormalized(kParamPhase,  bPhase ? 1 : 0);
+    setParamNormalized(kParamTarget, fTarget);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1044,6 +1056,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     Vst::ParamValue savedZoom   = dftZoom/zoomNum;
     Vst::ParamValue savedLevel  = 0.0;
     int32           savedPhase  = 0;
+    int32           savedTarget = 0;
     
     bandParamSet savedBand[numBands];
     xovrParamSet savedXovr[numBands];
@@ -1051,6 +1064,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     if (streamer.readDouble(savedZoom  ) == false) savedZoom = dftZoom/zoomNum;
     if (streamer.readDouble(savedLevel ) == false) savedLevel = fLevel;
     if (streamer.readInt32 (savedPhase ) == false) return kResultFalse;
+    if (streamer.readInt32 (savedTarget) == false) return kResultFalse;
 
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1071,8 +1085,9 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     
     // 2. Save as Norm Values
     fZoom   = savedZoom;
-    fLevel  = savedLevel;
+    fLevel  = paramGain.ToNormalized(savedLevel);;
     bPhase  = savedPhase > 0;
+    fTarget = paramTrgt.ToNormalized(savedTarget);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1092,9 +1107,10 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     }
     
     // 3. Set Parameters
-    setParamNormalized(kParamZoom,  savedZoom);
-    setParamNormalized(kParamLevel, savedLevel);
-    setParamNormalized(kParamPhase, savedPhase ? 1 : 0);
+    setParamNormalized(kParamZoom,  fZoom);
+    setParamNormalized(kParamLevel, fLevel);
+    setParamNormalized(kParamPhase, bPhase ? 1 : 0);
+    setParamNormalized(kParamTarget, fTarget);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1130,6 +1146,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
     fZoom   = getParamNormalized(kParamZoom);
     fLevel  = getParamNormalized(kParamLevel);
     bPhase  = getParamNormalized(kParamPhase);
+    fTarget = getParamNormalized(kParamTarget);
 
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1149,8 +1166,9 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
     }
 
     streamer.writeDouble(fZoom);
-    streamer.writeDouble(fLevel);
+    streamer.writeDouble(paramGain.ToPlain(fLevel));
     streamer.writeInt32(bPhase ? 1 : 0);
+    streamer.writeInt32(paramTrgt.ToPlainList(fTarget));
 
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1293,6 +1311,24 @@ tresult PLUGIN_API GNRC_EQ_Controller::getParamValueByString (Vst::ParamID tag, 
 }
 
 //------------------------------------------------------------------------
+tresult GNRC_EQ_Controller::receiveText(const char* text)
+{
+    // received from Component
+    if (text)
+    {
+        if (strcmp("latency_changed\n", text))
+        {
+            if (auto componentHandler = getComponentHandler ())
+            {
+                componentHandler->restartComponent (Vst::kReloadComponent);
+                // fprintf (stdout, "restartComponent\n");
+            }
+        }
+    }
+    return kResultOk;
+}
+
+//------------------------------------------------------------------------
 // DataExchangeController Implementation
 //------------------------------------------------------------------------
 tresult PLUGIN_API GNRC_EQ_Controller::notify(Vst::IMessage* message)
@@ -1303,7 +1339,25 @@ tresult PLUGIN_API GNRC_EQ_Controller::notify(Vst::IMessage* message)
     if (strcmp (message->getMessageID (), "GUI") == 0)
     {
         
-        return kResultOk;
+        if (!curveControllers.empty())
+                {
+                    for (auto iter = curveControllers.begin(); iter != curveControllers.end(); iter++)
+                    {
+                        if (auto attributes = message->getAttributes ())
+                        {
+                            const void* data;
+                            uint32 sizeInBytes;
+                            ParamValue getValue = 0.0;
+                            
+                            if (attributes->getFloat  ("targetSR",  getValue) == kResultTrue)
+                            {
+                                targetSR  = getValue;
+                                (*iter)->setEQsampleRate(targetSR);
+                            }
+                        }
+                    }
+                }
+            return kResultOk;
     }
 
     return EditControllerEx1::notify(message);

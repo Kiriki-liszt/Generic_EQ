@@ -66,6 +66,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::terminate ()
 //------------------------------------------------------------------------
 tresult PLUGIN_API GNRC_EQ_Processor::setActive (TBool state)
 {
+    call_after_SR_changed ();
     // fprintf (stdout, "GNRC_EQ_Processor::setActive\n");
     //--- called when the Plug-in is enable/disable (On/Off) -----
     return AudioEffect::setActive (state);
@@ -97,10 +98,14 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
                     int index  = std::clamp( (key - kParamBand01_Used) / bandSize,             0, numBands - 1); // 0 - 19
                     int xIndex = std::clamp(((key - kParamBand01_Used) / bandSize) - numBands, 0, numXover - 1); // 0 - 1
                     switch (key) {
-                        case kParamBypass: bBypass = (value > 0.5f); break;
+                        case kParamBypass:  bBypass = (value > 0.5f); break;
                         // case kParamZoom:   fZoom = value; break;
-                        case kParamLevel:  fLevel = value; break;
-                        case kParamPhase:  bPhase = value; break;
+                        case kParamLevel:   fLevel = value; break;
+                        case kParamPhase:   bPhase = (value > 0.5f); break;
+                        case kParamTarget:
+                            fTarget = value;
+                            sendTextMessage("latency_changed");
+                            break;
                             
                         case kParamBand01_Used: case kParamBand02_Used: case kParamBand03_Used: case kParamBand04_Used: case kParamBand05_Used:
                         case kParamBand06_Used: case kParamBand07_Used: case kParamBand08_Used: case kParamBand09_Used: case kParamBand10_Used:
@@ -201,14 +206,13 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
             processSVF<Vst::Sample64>((Vst::Sample64**)in, (Vst::Sample64**)out, numChannels, getSampleRate, data.numSamples);
         }
     }
-
     return kResultOk;
 }
 
 //------------------------------------------------------------------------
 uint32 PLUGIN_API GNRC_EQ_Processor::getLatencySamples()
 {
-    // fprintf (stdout, "getLatencySamples\n");
+    // fprintf (stdout, "getLatencySamples = %d\n", currLatency);
 
     return currLatency;
 }
@@ -218,6 +222,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setupProcessing (Vst::ProcessSetup& newSet
 {
     //--- called before any processing ----
     // fprintf (stdout, "setupProcessing\n");
+    // setupProcessing is not called in restartComponent.
     
     /*
      createInstance
@@ -272,6 +277,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     // Vst::ParamValue savedZoom   = 0.0; // UNUSED, left for compatibility
     Vst::ParamValue savedLevel  = 0.0;
     int32           savedPhase  = 0;
+    int32           savedTarget = 0;
     
     bandParamSet savedBand[numBands];
     xovrParamSet savedXovr[numXover];
@@ -280,6 +286,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     // if (streamer.readDouble(savedZoom  ) == false) return kResultFalse;
     if (streamer.readDouble(savedLevel ) == false) return kResultFalse;
     if (streamer.readInt32 (savedPhase ) == false) return kResultFalse;
+    if (streamer.readInt32 (savedTarget) == false) return kResultFalse;
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -301,8 +308,9 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     // 2. Save as Norm Values
     bBypass = savedBypass > 0;
     // fZoom   = savedZoom;
-    fLevel  = savedLevel;
+    fLevel  = paramGain.ToNormalized(savedLevel);
     bPhase  = savedPhase > 0;
+    fTarget = paramTrgt.ToNormalized(savedTarget);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -337,8 +345,9 @@ tresult PLUGIN_API GNRC_EQ_Processor::getState (IBStream* state)
     // Save in Plain Values
     streamer.writeInt32(bBypass ? 1 : 0);
     // streamer.writeDouble(fZoom);   // UNUSED, left for compatibility
-    streamer.writeDouble(fLevel);
+    streamer.writeDouble(paramGain.ToPlain(fLevel));
     streamer.writeInt32(bPhase ? 1 : 0);
+    streamer.writeInt32(paramTrgt.ToPlainList(fTarget));
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -401,17 +410,15 @@ void GNRC_EQ_Processor::processSVF
                 up_y[i] = overSampled;
             }
             
-            if (fParamOS == OS_2x)
+            if (fParamOS != OS_1x) // So, if x4 -> just quad band filter -> so I need only one-step filtering
             {
-                std::copy(OS_buff[channel].begin(), OS_buff[channel].end() - oversampling, OS_buff[channel].begin() + oversampling);
-                // std::copy(&up_y[oversampling - 1], &up_y[0], OS_buff[channel].begin());
-                // std::memmove(OS_buff[channel].data() + oversampling, OS_buff[channel].data(), sizeofDouble * (fir_size - oversampling));
-                OS_buff[channel][1] = up_y[0];
-                OS_buff[channel][0] = up_y[1];
+                std::copy(OS_buff[channel].begin(), OS_buff[channel].begin() + fir_taps[fParamOS] - oversampling, OS_buff[channel].begin() + oversampling);
+                std::reverse(up_y, up_y + oversampling);
+                std::copy(up_y, up_y + oversampling, OS_buff[channel].begin());
                 // transform_reduce works faster in double[], and slow in std::deque<double>
                 // but if loop order channel->sample, cache miss happens, and std::deque<double> works faster
                 // Well, it just depends case-by-case.
-                inputSample = std::transform_reduce(OS_coef.begin(), OS_coef.end(), OS_buff[channel].data() + oversampling - 1, 0.0);
+                inputSample = std::transform_reduce(OS_coef.begin(), OS_coef.begin() + fir_taps[fParamOS], OS_buff[channel].data() + oversampling - 1, 0.0);
             }
             else // if (fParamOS == overSample_1x)
             {
@@ -439,29 +446,37 @@ void GNRC_EQ_Processor::processSVF
 
 void GNRC_EQ_Processor::call_after_SR_changed ()
 {
-    if (projectSR <= 48000.0)
-    {
-        fParamOS = OS_2x;
-        targetSR = OS_plain[fParamOS] * projectSR;
-        
-        currLatency = latency_Fir_x2;
-    }
-    else
-    {
-        fParamOS = OS_1x;
-        targetSR = projectSR;
-        
-        currLatency = 0;
-    }
+    int table [4][4] = {
+        {OS_1x, OS_1x, OS_1x, OS_1x}, // Target : OS_1x, x1 [no oversampling]
+        {OS_2x, OS_1x, OS_1x, OS_1x}, // Target : OS_2x, x2 [ 96 /  88.2 kHz]
+        {OS_4x, OS_2x, OS_1x, OS_1x}, // Target : OS_4x, x4 [192 / 176.4 kHz]
+        {OS_8x, OS_4x, OS_2x, OS_1x}  // Target : OS_8x, x8 [384 / 352.8 kHz]
+    };
+    int sampleRateType = 3;
+    if      (projectSR <=  48000.0) sampleRateType = 0;
+    else if (projectSR <=  96000.0) sampleRateType = 1;
+    else if (projectSR <= 192000.0) sampleRateType = 2;
+    else                            sampleRateType = 3;
     
-    Kaiser::calcFilter(96000.0, 0.0, 24000.0, fir_size, 100.0, OS_coef.data()); // half band filter
+    fParamOS = table[paramTrgt.ToPlainList(fTarget)][sampleRateType];
+    targetSR = OS_plain[fParamOS] * projectSR;
+    currLatency = latency_fir[fParamOS];
+    
+    Kaiser::calcFilter(OS_plain[fParamOS] * 48000.0, 0.0, 24000.0, fir_taps[fParamOS], 80.0, OS_coef.data());
     std::for_each(OS_coef.begin(), OS_coef.end(), [this](double &n) { n *= OS_plain[fParamOS]; });
     
     for (auto& it : OS_buff)
         std::fill(it.begin(), it.end(), 0.0);
     
     for (auto& it : latencyDelayLine)
-        it.resize(latency_Fir_x2, 0.0);
+        it.resize(currLatency, 0.0);
+    Steinberg::Vst::IMessage* message = allocateMessage();
+    if (message)
+    {
+        message->setMessageID("GUI");
+        message->getAttributes()->setFloat("targetSR", targetSR);
+        sendMessage(message);
+    }
 
     call_after_parameter_changed ();
 };

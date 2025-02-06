@@ -961,6 +961,24 @@ static SMTG_CONSTEXPR int OS_num  = 3;
 static SMTG_CONSTEXPR int OS_size = 4;
 static SMTG_CONSTEXPR int OS_plain[OS_size] = {1, 2, 4, 8};
 
+static constexpr Steinberg::tchar* target_SR_names[OS_size] = {
+    (Steinberg::tchar*)STR16("x1 [no oversampling]"),
+    (Steinberg::tchar*)STR16("x2 [ 96 /  88.2 kHz]"),
+    (Steinberg::tchar*)STR16("x4 [192 / 176.4 kHz]"),
+    (Steinberg::tchar*)STR16("x8 [384 / 352.8 kHz]")
+};
+
+static SMTG_CONSTEXPR int32 fir_x1_size = 0;
+static SMTG_CONSTEXPR int32 fir_x2_size = 69;
+static SMTG_CONSTEXPR int32 fir_x4_size = 137;
+static SMTG_CONSTEXPR int32 fir_x8_size = 273; // sth like (x * 2^n) + 1
+static SMTG_CONSTEXPR int32 latency_fir_x1 = 0;
+static SMTG_CONSTEXPR int32 latency_fir_x2 = (fir_x2_size - 1) / 4;
+static SMTG_CONSTEXPR int32 latency_fir_x4 = (fir_x4_size - 1) / 8;
+static SMTG_CONSTEXPR int32 latency_fir_x8 = (fir_x8_size - 1) / 16;
+static SMTG_CONSTEXPR int32 fir_taps   [OS_size] = {   fir_x1_size,    fir_x2_size,    fir_x4_size,    fir_x8_size};
+static SMTG_CONSTEXPR int32 latency_fir[OS_size] = {latency_fir_x1, latency_fir_x2, latency_fir_x4, latency_fir_x8};
+
 static SMTG_CONSTEXPR bool dftBypass          = false;
 
 static SMTG_CONSTEXPR ParamValue minParamFreq = 20.0;
@@ -1031,6 +1049,7 @@ static SMTG_CONSTEXPR int32 dftZoom = 2;
 static const ParameterConverter paramGain      (minParamGain, maxParamGain, ParameterConverter::range);
 static const ParameterConverter paramFreq      (minParamFreq, maxParamFreq, ParameterConverter::log);
 static const ParameterConverter paramQlty      (minParamQlty, maxParamQlty, ParameterConverter::log);
+static const ParameterConverter paramTrgt      (0,            0,            ParameterConverter::list, OS_num);
 static const ParameterConverter paramType      (0,            0,            ParameterConverter::list, SVF_Generic::tNum);
 static const ParameterConverter paramPass      (0,            0,            ParameterConverter::list, SVF_xover::pNum);
 static const ParameterConverter paramXtyp      (0,            0,            ParameterConverter::list, SVF_xover::tNum);

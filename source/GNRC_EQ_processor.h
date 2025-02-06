@@ -65,12 +65,6 @@ public:
     
     //------------------------------------------------------------------------
 protected:
-    static SMTG_CONSTEXPR int32 fir_size = 69;
-    static SMTG_CONSTEXPR int32 tap_hm = (fir_size - 1) / 2;
-    static SMTG_CONSTEXPR int32 latency_Fir_x2 = (fir_size - 1) / 4;
-    static SMTG_CONSTEXPR size_t sizeofDouble = sizeof(double);
-    // static SMTG_CONSTEXPR size_t sizeofOsMove = sizeof(double) * (fir_size - 4);
-    
     template <typename SampleType>
     void processSVF ( SampleType** inputs, SampleType** outputs, int32 numChannels, SampleRate getSampleRate, int32 sampleFrames );
     
@@ -83,8 +77,6 @@ protected:
     ParamValue fLevel  = 0.5;
     bool       bPhase  = false;
     // ParamValue fZoom   = 2.0 / 6.0; // UNUSED
-    
-    int32      fParamOS = OS_2x;
     
     // store in Norm Value
     std::array<std::array<ParamValue, bandSize>, numBands> pBand = {{
@@ -120,13 +112,15 @@ protected:
 
     // plugin enviroment
     SampleRate projectSR = 48000.0;
-    SampleRate targetSR  = 96000.0;
-    int32 currLatency = latency_Fir_x2;
+    SampleRate targetSR  = projectSR * OS_plain[OS_8x];
+    int32 currLatency = latency_fir[OS_8x];
     
     // Oversampling and Latency
+    int32      fParamOS = OS_8x; // Internal
+    ParamValue fTarget = OS_8x;  // External Parameter
     std::vector<std::deque<ParamValue>> latencyDelayLine;    // vector size = numChannels
-    std::array<ParamValue,   fir_size> OS_coef;
-    std::vector<std::array<ParamValue,   fir_size>> OS_buff; // vector size = numChannels
+    std::array<ParamValue, Kaiser::maxTap> OS_coef;
+    std::vector<std::array<ParamValue, Kaiser::maxTap>> OS_buff; // vector size = numChannels
 };
 
 //------------------------------------------------------------------------

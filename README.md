@@ -105,7 +105,8 @@ Supports Windows, Mac, Linux(same as VSTSDK).
 
 ## Version logs
 
-v1.0.0.b : intial try.  
+v1.0.0.b : Intial try.  
+v1.0.0.c : Target parameter added for dynamic oversampling.  
 
 ## Further lookings  
 
