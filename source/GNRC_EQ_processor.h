@@ -112,12 +112,12 @@ protected:
 
     // plugin enviroment
     SampleRate projectSR = 48000.0;
-    SampleRate targetSR  = projectSR * OS_plain[OS_8x];
-    int32 currLatency = latency_fir[OS_8x];
+    SampleRate targetSR  = projectSR * OS_plain[OS_1x];
+    int32 currLatency = latency_fir[OS_1x];
     
     // Oversampling and Latency
-    int32      fParamOS = OS_8x; // Internal
-    ParamValue fTarget = OS_8x;  // External Parameter
+    int32      fParamOS = OS_1x; // Internal
+    ParamValue fTarget = OS_1x;  // External Parameter
     std::vector<std::deque<ParamValue>> latencyDelayLine;    // vector size = numChannels
     std::array<ParamValue, Kaiser::maxTap> OS_coef;
     std::vector<std::array<ParamValue, Kaiser::maxTap>> OS_buff; // vector size = numChannels

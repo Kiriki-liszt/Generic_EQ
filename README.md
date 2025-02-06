@@ -3,7 +3,7 @@
 Generic EQ is a minimum phase EQ for REW Auto EQ - Generic type.  
 
 Runs in double precision 64-bit internal processing. Also double precision input / output if supported.  
-At 44.1 kHz and 48 kHz sampling rates, it upsamples to 88.2 kHz or 96 kHz respectively to do all EQ processing with 17 sample latency.  
+You can target specific sampling rate with dynamic oversampling, but REW EQ is just cramping EQ. Use it with no oversampling for exact match.  
 
 ## Features  
 
@@ -108,16 +108,6 @@ Supports Windows, Mac, Linux(same as VSTSDK).
 v1.0.0.b : Intial try.  
 v1.0.0.c : Target parameter added for dynamic oversampling.  
 
-## Further lookings  
-
-[https://gearspace.com/board/showpost.php?p=15864586&postcount=730](https://gearspace.com/board/showpost.php?p=15864586&postcount=730)  
-[Vicanek, Martin. Matched Second Order Digital Filters. (2016).](https://www.vicanek.de/articles/BiquadFits.pdf)  
-[John Flynn & Joshua D. Reiss (2018). Improving the frequency response magnitude and phase of analogue-matched digital filters](https://www.eecs.qmul.ac.uk/~josh/documents/2018/19412.pdf)  
-[D. W. Gunness, O. S. Chauhan, “Optimizing the Magnitude Response of Matched z-Transform Filters (“MZTi”) for Loudspeaker Equalization”](https://www.khabdha.org/wp-content/uploads/2008/03/optimizing-the-magnitude-response-of-mzt-filters-mzti-2007.pdf)  
-
-[Martin Vicanek. Matched Two-Pole Digital Shelving Filters. (23. March 2024).](https://vicanek.de/articles/2poleShelvingFits.pdf)  
-[Martin Vicanek. Matched Second Order Digital Filters. (14. February 2016).](https://www.vicanek.de/articles/BiquadFits.pdf)  
-
 ## Ref  
 
 <https://dafx14.fau.de/papers/dafx14_aaron_wishnick_time_varying_filters_for_.pdf>  
@@ -126,7 +116,3 @@ v1.0.0.c : Target parameter added for dynamic oversampling.
 <https://www.researchgate.net/publication/282326563>  
 <https://www.dsprelated.com/freebooks/filters/Implementation_Structures_Recursive_Digital.html>  
 <https://forum.juce.com/t/dsp-module-discussion-iir-filter-and-statevariablefilter/23891>  
-
-## TODO  
-
-[] Zero latency option - Decramp using Martin Vicanek method.  

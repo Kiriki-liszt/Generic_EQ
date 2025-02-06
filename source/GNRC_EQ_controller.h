@@ -83,7 +83,7 @@ protected:
 
     bool    byPass = false;
     double  level = 0.0;
-    double  EQ_SR = 96000.0;
+    double  EQ_SR = 48000.0;
 };
 }
 
@@ -223,7 +223,7 @@ protected:
     TBool      bBypass = false;
     ParamValue fLevel  = 0.5;
     TBool      bPhase  = false;
-    ParamValue fTarget = OS_8x;
+    ParamValue fTarget = OS_1x;
     ParamValue fZoom   = 2.0 / 6.0;
     
     std::array<std::array<double, bandSize>, numBands> pBand = {{
@@ -254,7 +254,7 @@ protected:
         {dftParamUsed, nrmParamPass, nrmBand02Freq, nrmParamXtyp, nrmParamOrdr}
     }};
     
-    SampleRate targetSR = 192000.0;
+    SampleRate targetSR = 48000.0;
 };
 
 

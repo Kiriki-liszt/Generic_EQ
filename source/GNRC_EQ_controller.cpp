@@ -778,7 +778,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::initialize (FUnknown* context)
     auto* Band_Target = new Vst::StringListParameter(STR16("Target"), kParamTarget, STR16(""), flags);
     for (int i = 0; i < OS_size; i++)
         Band_Target->appendString(target_SR_names[i]);
-    Band_Target->getInfo().defaultNormalizedValue = 1.0;
+    Band_Target->getInfo().defaultNormalizedValue = 0.0;
     parameters.addParameter(Band_Target);
     
     for (int bands = 0; bands < numBands; bands++)

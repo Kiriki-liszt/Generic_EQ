@@ -411,7 +411,11 @@ void GNRC_EQ_Processor::processSVF
                 up_y[i] = overSampled;
             }
             
-            if (fParamOS != OS_1x) // So, if x4 -> just quad band filter -> so I need only one-step filtering
+            if (fParamOS == OS_1x)
+            {
+                inputSample = up_y[0];
+            }
+            else // if (fParamOS != OS_1x) // So, if x4 -> just quad band filter -> so I need only one-step filtering
             {
                 std::copy(OS_buff[channel].begin(), OS_buff[channel].begin() + fir_taps[fParamOS] - oversampling, OS_buff[channel].begin() + oversampling);
                 std::reverse(up_y, up_y + oversampling);
@@ -420,22 +424,18 @@ void GNRC_EQ_Processor::processSVF
                 // but if loop order channel->sample, cache miss happens, and std::deque<double> works faster
                 // Well, it just depends case-by-case.
                 inputSample = std::transform_reduce(OS_coef.begin(), OS_coef.begin() + fir_taps[fParamOS], OS_buff[channel].data() + oversampling - 1, 0.0);
+                
+                // Latency compensate
+                latencyDelayLine[channel].push_back(drySample);
+                drySample = *(latencyDelayLine[channel].end() - 1 - currLatency);
+                latencyDelayLine[channel].pop_front();
             }
-            else // if (fParamOS == overSample_1x)
-            {
-                inputSample = up_y[0];
-            }
-
-            // Latency compensate
-            latencyDelayLine[channel].push_back(drySample);
-            Vst::Sample64 delayed = *(latencyDelayLine[channel].end() - 1 - currLatency);
-            latencyDelayLine[channel].pop_front();
             
             if (bPhase)
                 inputSample = -inputSample;
 
             if (bBypass)
-                inputSample = delayed;
+                inputSample = drySample;
 
             outputs[channel][samples] = (SampleType)inputSample;
 
