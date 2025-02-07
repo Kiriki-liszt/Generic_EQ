@@ -17,8 +17,8 @@ You can target specific sampling rate with dynamic oversampling, but REW EQ is j
 | LP, HP           | LP, HP w/ Q = 0.7071 |
 | LP Q, HP Q       | LP, HP               |
 | LP1, HP1         | LP 6, HP 6           |
-| LS, HS           | LS, HS               |
-| LS Q, HS Q       | LS, HS w/ Q = 0.7071 |
+| LS, HS           | LS, HS w/ Q = 0.7071 |
+| LS Q, HS Q       | LS, HS               |
 | LS 6dB, HS 6dB   | LS 6, HS 6           |
 | LS 12dB, HS 12dB | LS 12, HS 12         |
 | All pass         | AP                   |
