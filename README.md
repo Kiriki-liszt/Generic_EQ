@@ -104,7 +104,7 @@ v1.0.0.b : Intial try.
 v1.0.0.c : Target parameter added for dynamic oversampling.  
 v1.0.0.d : Add AllPass 6dB/oct.  
 v1.0.0.e : Flip AllPass 6dB/oct to have 0 rad at DC.  
-v1.0.0.f : Add Channel selection.  
+v1.0.0.f : Add Channel selection. Revert back to non-inverting odd-order LinkwitzRiley.  
 
 ## Ref  
 
