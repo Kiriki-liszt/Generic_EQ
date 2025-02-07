@@ -74,7 +74,7 @@ protected:
     uint16_t numChannels {0};
     
     bool       bBypass = false;
-    ParamValue fLevel  = 0.5;
+    ParamValue fLevel  = nrmParamLevl;
     bool       bPhase  = false;
     // ParamValue fZoom   = 2.0 / 6.0; // UNUSED
     

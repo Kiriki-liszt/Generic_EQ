@@ -33,7 +33,7 @@ public:
     CColor getLineColor() const { return LineColor; }
     
     void setParamNorm(Steinberg::Vst::ParamID tag, Steinberg::Vst::ParamValue normValue);
-    void setLevel(Steinberg::Vst::ParamValue normValue) {level = yg331::paramGain.ToPlain(normValue);}
+    void setLevel(Steinberg::Vst::ParamValue normValue) {level = yg331::paramLevl.ToPlain(normValue);}
     void setBypass(Steinberg::Vst::ParamValue normValue) {byPass = normValue == 0.0 ? false : true;}
     void setEQsampleRate(double SR) {
         EQ_SR = SR;
@@ -221,7 +221,7 @@ protected:
     UICurveControllerList curveControllers;
 
     TBool      bBypass = false;
-    ParamValue fLevel  = 0.5;
+    ParamValue fLevel  = nrmParamLevl;
     TBool      bPhase  = false;
     ParamValue fTarget = OS_1x;
     ParamValue fZoom   = 2.0 / 6.0;

@@ -225,6 +225,7 @@ void EQCurveView::draw(CDrawContext* pContext) {
         }
     }
 
+    // Get curve for Bands
     std::vector<double> each_band[yg331::numBands];
     for (int bands = 0; bands < yg331::numBands; bands++)
     {
@@ -238,14 +239,14 @@ void EQCurveView::draw(CDrawContext* pContext) {
                 double tmp = MIN_FREQ * std::exp(FREQ_LOG_MAX * x / r.getWidth());
                 double freq = (std::max)((std::min)(tmp, MAX_FREQ), MIN_FREQ);
                 double dB = 20 * log10(svf[bands].mag_response(freq));
-                if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
+                if ((svf[bands].Type == yg331::SVF_Generic::tAllPass) || (svf[bands].Type == yg331::SVF_Generic::tAllPass_6))
                     dB = svf[bands].phs_response(freq);
 
                 each_band[bands].push_back(dB);
                 
                 double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
                 
-                if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
+                if ((svf[bands].Type == yg331::SVF_Generic::tAllPass) || (svf[bands].Type == yg331::SVF_Generic::tAllPass_6))
                     m = (((dB / M_PI) / 2) + 0.5);
 
                 double scy = m * r.getHeight();
@@ -265,7 +266,7 @@ void EQCurveView::draw(CDrawContext* pContext) {
             pContext->setDrawMode(VSTGUI::kAntiAliasing);
             pContext->setLineWidth(1.0);
             pContext->setLineStyle(VSTGUI::kLineSolid);
-            if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
+            if ((svf[bands].Type == yg331::SVF_Generic::tAllPass) || (svf[bands].Type == yg331::SVF_Generic::tAllPass_6))
             {
                 pContext->setLineStyle(VSTGUI::kLineOnOffDash);
             }
@@ -288,7 +289,7 @@ void EQCurveView::draw(CDrawContext* pContext) {
                 
                 double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
                 
-                if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
+                if ((svf[bands].Type == yg331::SVF_Generic::tAllPass) || (svf[bands].Type == yg331::SVF_Generic::tAllPass_6))
                     m = (((dB / M_PI) / 2) + 0.5);
 
                 double scy = m * r.getHeight();
@@ -316,6 +317,7 @@ void EQCurveView::draw(CDrawContext* pContext) {
         }
     }
     
+    // Get curve for Xovers
     std::vector<double> xovr_band[yg331::numXover];
     for (int bands = 0; bands < yg331::numXover; bands++)
     {
@@ -333,9 +335,6 @@ void EQCurveView::draw(CDrawContext* pContext) {
                 xovr_band[bands].push_back(dB);
                 
                 double m = 1.0 - (((dB / DB_EQ_RANGE) / 2) + 0.5);
-                
-                if (svf[bands].Type == yg331::SVF_Generic::tAllPass)
-                    m = (((dB / M_PI) / 2) + 0.5);
 
                 double scy = m * r.getHeight();
 
@@ -416,7 +415,7 @@ void EQCurveView::draw(CDrawContext* pContext) {
             double dB = 0.0;
             for (int bands = 0; bands < yg331::numBands; bands++)
             {
-                if (svf[bands].Type != yg331::SVF_Generic::tAllPass)
+                if ((svf[bands].Type != yg331::SVF_Generic::tAllPass) && (svf[bands].Type != yg331::SVF_Generic::tAllPass_6))
                     dB += each_band[bands].back();
                 each_band[bands].pop_back();
             }
@@ -764,7 +763,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::initialize (FUnknown* context)
     
     tag = kParamLevel;
     stepCount = 0;
-    auto* ParamLevel = new LinRangeParameter(STR16("Level"), tag, STR16("dB"), minParamGain, maxParamGain, dftParamGain, stepCount, flags);
+    auto* ParamLevel = new LinRangeParameter(STR16("Level"), tag, STR16("dB"), minParamLevl, maxParamLevl, dftParamLevl, stepCount, flags);
     ParamLevel->setPrecision(1);
     parameters.addParameter(ParamLevel);
     
@@ -994,7 +993,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     // 2. Save as Norm Values
     bBypass = savedBypass > 0;
     // fZoom   = savedZoom;
-    fLevel  = paramGain.ToNormalized(savedLevel);
+    fLevel  = paramLevl.ToNormalized(savedLevel);
     bPhase  = savedPhase > 0;
     fTarget = paramTrgt.ToNormalized(savedTarget);
     
@@ -1085,7 +1084,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     
     // 2. Save as Norm Values
     fZoom   = savedZoom;
-    fLevel  = paramGain.ToNormalized(savedLevel);;
+    fLevel  = paramLevl.ToNormalized(savedLevel);;
     bPhase  = savedPhase > 0;
     fTarget = paramTrgt.ToNormalized(savedTarget);
     
@@ -1166,7 +1165,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
     }
 
     streamer.writeDouble(fZoom);
-    streamer.writeDouble(paramGain.ToPlain(fLevel));
+    streamer.writeDouble(paramLevl.ToPlain(fLevel));
     streamer.writeInt32(bPhase ? 1 : 0);
     streamer.writeInt32(paramTrgt.ToPlainList(fTarget));
 

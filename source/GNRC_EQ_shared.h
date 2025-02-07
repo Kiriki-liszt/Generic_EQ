@@ -179,14 +179,15 @@ public:
     static constexpr int tHighPass_6    = 4; // No Gain, No Q
     static constexpr int tLowShelf      = 5;
     static constexpr int tHighShelf     = 6;
-    static constexpr int tLowShelf_6    = 7; // No Gain, Q // fc at -3dB
-    static constexpr int tHighShelf_6   = 8; // No Gain, Q // fc at -3dB
-    static constexpr int tLowShelf_12   = 9; // No Gain, Q // fc at -3dB
-    static constexpr int tHighShelf_12  = 10; // No Gain, Q // fc at -3dB
+    static constexpr int tLowShelf_6    = 7; // No Q // fc at -3dB
+    static constexpr int tHighShelf_6   = 8; // No Q // fc at -3dB
+    static constexpr int tLowShelf_12   = 9; // No Q // fc at -3dB
+    static constexpr int tHighShelf_12  = 10; // No Q // fc at -3dB
     static constexpr int tNotch         = 11; // No Gain
     static constexpr int tAllPass       = 12; // No Gain
-    static constexpr int tNum           = 12;
-    static constexpr int tSize          = 13;
+    static constexpr int tAllPass_6     = 13; // No Gain, No Q
+    static constexpr int tNum           = 13;
+    static constexpr int tSize          = 14;
 
     static constexpr Steinberg::tchar* Filter_Types[tSize] = {
         (Steinberg::tchar*)STR16("Bell"),
@@ -201,7 +202,8 @@ public:
         (Steinberg::tchar*)STR16("L Shelf 12"),
         (Steinberg::tchar*)STR16("H Shelf 12"),
         (Steinberg::tchar*)STR16("Notch"),
-        (Steinberg::tchar*)STR16("All Pass")
+        (Steinberg::tchar*)STR16("All Pass"),
+        (Steinberg::tchar*)STR16("All Pass 6") // add HP6 and flipped LP6 to get AP6
     };
 
     static constexpr int o6dBoct  = 0;
@@ -266,6 +268,7 @@ public:
             case tHighPass_6    : Ordr = o6dBoct; break;
             case tLowShelf_6    : Ordr = o6dBoct; break; // fc at -3dB
             case tHighShelf_6   : Ordr = o6dBoct; break; // fc at -3dB
+            case tAllPass_6     : Ordr = o6dBoct; break;
                 
             case tHighPass      : Ordr = o12dBoct; break;
             case tLowPass       : Ordr = o12dBoct; break;
@@ -293,23 +296,22 @@ public:
         
         switch (Type)
         {
-            case tLowPass       : m0 = 0;     m1 = 0;     m2 = 1;   break;
-            case tHighPass      : m0 = 1;     m1 = 0;     m2 = 0;   break;
-            case tNotch         : m0 = 1;     m1 = 0;     m2 = 1;   break;
-            case tAllPass       : m0 = 1;     m1 = -k;    m2 = 1;   break;
-            case tBell          : m0 = 1;     m1 = k * A; m2 = 1;     k = k / A;       break;
-            case tLowShelf      : m0 = 1;     m1 = k * A; m2 = A * A; g = g / sqrt(A); break;
-            case tHighShelf     : m0 = A * A; m1 = k * A; m2 = 1;     g = g * sqrt(A); break;
-                
-            case tLowPass_6     : m0 = 0;     m1 = 0;     m2 = 1;   break;
-            case tHighPass_6    : m0 = 1;     m1 = 0;     m2 = 0;   break;
-
-            case tLowShelf_6    : m0 = 1;     m1 = 0;     m2 = A * A; break; // fc at -3dB
-            case tHighShelf_6   : m0 = A * A; m1 = 0;     m2 = 1;     break; // fc at -3dB
-
-            case tLowShelf_12   : m0 = 1;     m1 = A * M_SQRT2; m2 = A * A; k = M_SQRT2; break; // fc at -3dB
-            case tHighShelf_12  : m0 = A * A; m1 = A * M_SQRT2; m2 = 1;     k = M_SQRT2; break; // fc at -3dB
-                
+            case tLowPass       : m0 = 0;       m1 = 0;             m2 = 1;     break;
+            case tHighPass      : m0 = 1;       m1 = 0;             m2 = 0;     break;
+            case tNotch         : m0 = 1;       m1 = 0;             m2 = 1;     break;
+            case tAllPass       : m0 = 1;       m1 = -k;            m2 = 1;     break;
+            case tBell          : m0 = 1;       m1 = k * A;         m2 = 1;     k = k / A;          break;
+            case tLowShelf      : m0 = 1;       m1 = k * A;         m2 = A * A; g = g / sqrt(A);    break;
+            case tHighShelf     : m0 = A * A;   m1 = k * A;         m2 = 1;     g = g * sqrt(A);    break;
+            case tLowShelf_12   : m0 = 1;       m1 = A * M_SQRT2;   m2 = A * A; k = M_SQRT2;        break; // fc at -3dB
+            case tHighShelf_12  : m0 = A * A;   m1 = A * M_SQRT2;   m2 = 1;     k = M_SQRT2;        break; // fc at -3dB
+  
+            case tLowPass_6     : m0 = 0;       m1 = 0;             m2 = 1;     break;
+            case tHighPass_6    : m0 = 1;       m1 = 0;             m2 = 0;     break;
+            case tLowShelf_6    : m0 = 1;       m1 = 0;             m2 = A * A; break; // fc at -3dB
+            case tHighShelf_6   : m0 = A * A;   m1 = 0;             m2 = 1;     break; // fc at -3dB
+            case tAllPass_6     : m0 = 1;       m1 = 0;             m2 = -1;    break; // add HP6 and flipped LP6 to get AP6
+ 
             default: break;
         }
 
@@ -318,7 +320,8 @@ public:
         return;
     };
 
-    inline double tick_6dBoct(double vin) {
+    inline double tick_6dBoct (double vin)
+    {
         // disable v1 stage
         t0 = vin - ic2eq;
         v0 = t0 / (1.0 + g);// gt0 * t0;
@@ -328,7 +331,8 @@ public:
 
         return m0 * v0 + m2 * v2;
     }
-    inline double tick_12dBoct(double vin) {
+    inline double tick_12dBoct (double vin)
+    {
         // tick serial(possibly quicker on cpus with low latencies)
         t0 = vin - ic2eq;
         v0 = gt0 * t0 - gk0 * ic1eq; // high
@@ -370,11 +374,11 @@ public:
         {
             // Numerator complex
             nr = zr * (-m0 /* + m1 * (g - 1) */ + m2 * g) + (m0 /* + m1 * (g + 1) */ + m2 * g);
-            ni = zi * (-m0 /* + m1 * (g - 1) */ + m2 * g);
+            ni = -zi * (-m0 /* + m1 * (g - 1) */ + m2 * g);
 
             // Denominator complex
             dr = zr * (g - 1) + (g + 1);
-            di = zi * (g - 1);
+            di = -zi * (g - 1);
         }
         else {
             // z * z
@@ -1013,9 +1017,13 @@ static SMTG_CONSTEXPR ParamValue dftBandFreq[numBands] = {
     dftBand11Freq, dftBand12Freq, dftBand13Freq, dftBand14Freq, dftBand15Freq,
     dftBand16Freq, dftBand17Freq, dftBand18Freq, dftBand19Freq, dftBand20Freq};
 
-static SMTG_CONSTEXPR ParamValue minParamGain = -12.0;
-static SMTG_CONSTEXPR ParamValue maxParamGain = 12.0;
+static SMTG_CONSTEXPR ParamValue minParamGain = -100.0;
+static SMTG_CONSTEXPR ParamValue maxParamGain = 30.0;
 static SMTG_CONSTEXPR ParamValue dftParamGain = 0.0;
+
+static SMTG_CONSTEXPR ParamValue minParamLevl = -30.0;
+static SMTG_CONSTEXPR ParamValue maxParamLevl = 30.0;
+static SMTG_CONSTEXPR ParamValue dftParamLevl = 0.0;
 
 static SMTG_CONSTEXPR ParamValue minParamQlty = 0.1;
 static SMTG_CONSTEXPR ParamValue maxParamQlty = 50.0;
@@ -1047,6 +1055,7 @@ static SMTG_CONSTEXPR int32 zoomNum = 6;
 static SMTG_CONSTEXPR int32 dftZoom = 2;
 
 static const ParameterConverter paramGain      (minParamGain, maxParamGain, ParameterConverter::range);
+static const ParameterConverter paramLevl      (minParamLevl, maxParamLevl, ParameterConverter::range);
 static const ParameterConverter paramFreq      (minParamFreq, maxParamFreq, ParameterConverter::log);
 static const ParameterConverter paramQlty      (minParamQlty, maxParamQlty, ParameterConverter::log);
 static const ParameterConverter paramTrgt      (0,            0,            ParameterConverter::list, OS_num);
@@ -1077,6 +1086,7 @@ static const double nrmBand19Freq = paramFreq.ToNormalized(dftBand19Freq);
 static const double nrmBand20Freq = paramFreq.ToNormalized(dftBand20Freq);
 
 static const double nrmParamGain = paramGain.ToNormalized(dftParamGain);
+static const double nrmParamLevl = paramLevl.ToNormalized(dftParamLevl);
 static const double nrmParamQlty = paramQlty.ToNormalized(dftParamQlty);
 static const double nrmParamType = paramQlty.ToNormalizedList(dftParamType);
 static const double nrmParamPass = paramPass.ToNormalizedList(dftParamPass);

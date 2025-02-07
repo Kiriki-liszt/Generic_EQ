@@ -309,7 +309,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     // 2. Save as Norm Values
     bBypass = savedBypass > 0;
     // fZoom   = savedZoom;
-    fLevel  = paramGain.ToNormalized(savedLevel);
+    fLevel  = paramLevl.ToNormalized(savedLevel);
     bPhase  = savedPhase > 0;
     fTarget = paramTrgt.ToNormalized(savedTarget);
     
@@ -346,7 +346,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::getState (IBStream* state)
     // Save in Plain Values
     streamer.writeInt32(bBypass ? 1 : 0);
     // streamer.writeDouble(fZoom);   // UNUSED, left for compatibility
-    streamer.writeDouble(paramGain.ToPlain(fLevel));
+    streamer.writeDouble(paramLevl.ToPlain(fLevel));
     streamer.writeInt32(bPhase ? 1 : 0);
     streamer.writeInt32(paramTrgt.ToPlainList(fTarget));
     
@@ -380,7 +380,7 @@ void GNRC_EQ_Processor::processSVF
     Steinberg::int32 sampleFrames
   )
 {
-    Vst::Sample64 level = DecibelConverter::ToGain(paramGain.ToPlain(fLevel));
+    Vst::Sample64 level = DecibelConverter::ToGain(paramLevl.ToPlain(fLevel));
     int32 oversampling = OS_plain[fParamOS]; 
     
     for (int32 channel = 0; channel < numChannels; channel++)
