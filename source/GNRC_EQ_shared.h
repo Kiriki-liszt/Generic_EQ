@@ -853,9 +853,9 @@ public:
         for (int i = 0; i < numFlt; i++)
             sample = flt[i].computeSVF(sample);
         
-        if (Used && Type == tLinkwitzRiley && Pass == pHigh)
-            if (Ordr == o12dBoct || Ordr == o36dBoct)
-                sample = -sample;
+        //if (Used && Type == tLinkwitzRiley && Pass == pHigh)
+        //    if (Ordr == o12dBoct || Ordr == o36dBoct)
+        //        sample = -sample;
         
         return sample;
     }
