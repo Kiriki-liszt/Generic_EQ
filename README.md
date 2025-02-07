@@ -113,3 +113,7 @@ v1.0.0.e : Flip AllPass 6dB/oct to have 0 rad at DC.
 <https://www.researchgate.net/publication/282326563>  
 <https://www.dsprelated.com/freebooks/filters/Implementation_Structures_Recursive_Digital.html>  
 <https://forum.juce.com/t/dsp-module-discussion-iir-filter-and-statevariablefilter/23891>  
+
+## TODO  
+
+[] split Stereo and make it available to select L/R.  
