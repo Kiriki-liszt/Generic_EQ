@@ -849,11 +849,14 @@ public:
     inline double computeXover (double vin)
     {
         double sample = vin;
+        
         for (int i = 0; i < numFlt; i++)
             sample = flt[i].computeSVF(sample);
-        if (Type == tLinkwitzRiley && Pass == pHigh)
+        
+        if (Used && Type == tLinkwitzRiley && Pass == pHigh)
             if (Ordr == o12dBoct || Ordr == o36dBoct)
                 sample = -sample;
+        
         return sample;
     }
     
