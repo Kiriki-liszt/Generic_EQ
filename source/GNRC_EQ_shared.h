@@ -203,7 +203,7 @@ public:
         (Steinberg::tchar*)STR16("H Shelf 12"),
         (Steinberg::tchar*)STR16("Notch"),
         (Steinberg::tchar*)STR16("All Pass"),
-        (Steinberg::tchar*)STR16("All Pass 6") // add HP6 and flipped LP6 to get AP6
+        (Steinberg::tchar*)STR16("All Pass 6") // add LP6 and flipped HP6 to get AP6
     };
 
     static constexpr int o6dBoct  = 0;
@@ -310,7 +310,7 @@ public:
             case tHighPass_6    : m0 = 1;       m1 = 0;             m2 = 0;     break;
             case tLowShelf_6    : m0 = 1;       m1 = 0;             m2 = A * A; break; // fc at -3dB
             case tHighShelf_6   : m0 = A * A;   m1 = 0;             m2 = 1;     break; // fc at -3dB
-            case tAllPass_6     : m0 = 1;       m1 = 0;             m2 = -1;    break; // add HP6 and flipped LP6 to get AP6
+            case tAllPass_6     : m0 = -1;      m1 = 0;             m2 = 1;    break; // add LP6 and flipped HP6 to get AP6
  
             default: break;
         }

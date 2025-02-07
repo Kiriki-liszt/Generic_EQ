@@ -2120,7 +2120,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_1_GQ,Band_1_Q,Band_1_Q,Band_1_No,Band_1_No,Band_1_GQ,Band_1_GQ,Band_1_G,Band_1_G,Band_1_G,Band_1_G,Band_1_Q,Band_1_Q",
+									"template-names": "Band_1_GQ,Band_1_Q,Band_1_Q,Band_No,Band_No,Band_1_GQ,Band_1_GQ,Band_1_G,Band_1_G,Band_1_G,Band_1_G,Band_1_Q,Band_1_Q,Band_No",
 									"template-switch-control": "Band1::Band1Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -2288,7 +2288,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_2_GQ,Band_2_Q,Band_2_Q,Band_2_No,Band_2_No,Band_2_GQ,Band_2_GQ,Band_2_G,Band_2_G,Band_2_G,Band_2_G,Band_2_Q,Band_2_Q",
+									"template-names": "Band_2_GQ,Band_2_Q,Band_2_Q,Band_No,Band_No,Band_2_GQ,Band_2_GQ,Band_2_G,Band_2_G,Band_2_G,Band_2_G,Band_2_Q,Band_2_Q,Band_No",
 									"template-switch-control": "Band2::Band2Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -2456,7 +2456,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_3_GQ,Band_3_Q,Band_3_Q,Band_3_No,Band_3_No,Band_3_GQ,Band_3_GQ,Band_3_G,Band_3_G,Band_3_G,Band_3_G,Band_3_Q,Band_3_Q",
+									"template-names": "Band_3_GQ,Band_3_Q,Band_3_Q,Band_No,Band_No,Band_3_GQ,Band_3_GQ,Band_3_G,Band_3_G,Band_3_G,Band_3_G,Band_3_Q,Band_3_Q,Band_No",
 									"template-switch-control": "Band3::Band3Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -2624,7 +2624,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_4_GQ,Band_4_Q,Band_4_Q,Band_4_No,Band_4_No,Band_4_GQ,Band_4_GQ,Band_4_G,Band_4_G,Band_4_G,Band_4_G,Band_4_Q,Band_4_Q",
+									"template-names": "Band_4_GQ,Band_4_Q,Band_4_Q,Band_No,Band_No,Band_4_GQ,Band_4_GQ,Band_4_G,Band_4_G,Band_4_G,Band_4_G,Band_4_Q,Band_4_Q,Band_No",
 									"template-switch-control": "Band4::Band4Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -2792,7 +2792,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_5_GQ,Band_5_Q,Band_5_Q,Band_5_No,Band_5_No,Band_5_GQ,Band_5_GQ,Band_5_G,Band_5_G,Band_5_G,Band_5_G,Band_5_Q,Band_5_Q",
+									"template-names": "Band_5_GQ,Band_5_Q,Band_5_Q,Band_No,Band_No,Band_5_GQ,Band_5_GQ,Band_5_G,Band_5_G,Band_5_G,Band_5_G,Band_5_Q,Band_5_Q,Band_No",
 									"template-switch-control": "Band5::Band5Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -2960,7 +2960,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_6_GQ,Band_6_Q,Band_6_Q,Band_6_No,Band_6_No,Band_6_GQ,Band_6_GQ,Band_6_G,Band_6_G,Band_6_G,Band_6_G,Band_6_Q,Band_6_Q",
+									"template-names": "Band_6_GQ,Band_6_Q,Band_6_Q,Band_No,Band_No,Band_6_GQ,Band_6_GQ,Band_6_G,Band_6_G,Band_6_G,Band_6_G,Band_6_Q,Band_6_Q,Band_No",
 									"template-switch-control": "Band6::Band6Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -3128,7 +3128,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_7_GQ,Band_7_Q,Band_7_Q,Band_7_No,Band_7_No,Band_7_GQ,Band_7_GQ,Band_7_G,Band_7_G,Band_7_G,Band_7_G,Band_7_Q,Band_7_Q",
+									"template-names": "Band_7_GQ,Band_7_Q,Band_7_Q,Band_No,Band_No,Band_7_GQ,Band_7_GQ,Band_7_G,Band_7_G,Band_7_G,Band_7_G,Band_7_Q,Band_7_Q,Band_No",
 									"template-switch-control": "Band7::Band7Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -3296,7 +3296,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_8_GQ,Band_8_Q,Band_8_Q,Band_8_No,Band_8_No,Band_8_GQ,Band_8_GQ,Band_8_G,Band_8_G,Band_8_G,Band_8_G,Band_8_Q,Band_8_Q",
+									"template-names": "Band_8_GQ,Band_8_Q,Band_8_Q,Band_No,Band_No,Band_8_GQ,Band_8_GQ,Band_8_G,Band_8_G,Band_8_G,Band_8_G,Band_8_Q,Band_8_Q,Band_No",
 									"template-switch-control": "Band8::Band8Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -3464,7 +3464,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_9_GQ,Band_9_Q,Band_9_Q,Band_9_No,Band_9_No,Band_9_GQ,Band_9_GQ,Band_9_G,Band_9_G,Band_9_G,Band_9_G,Band_9_Q,Band_9_Q",
+									"template-names": "Band_9_GQ,Band_9_Q,Band_9_Q,Band_No,Band_No,Band_9_GQ,Band_9_GQ,Band_9_G,Band_9_G,Band_9_G,Band_9_G,Band_9_Q,Band_9_Q,Band_No",
 									"template-switch-control": "Band9::Band9Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -3632,7 +3632,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_10_GQ,Band_10_Q,Band_10_Q,Band_10_No,Band_10_No,Band_10_GQ,Band_10_GQ,Band_10_G,Band_10_G,Band_10_G,Band_10_G,Band_10_Q,Band_10_Q",
+									"template-names": "Band_10_GQ,Band_10_Q,Band_10_Q,Band_No,Band_No,Band_10_GQ,Band_10_GQ,Band_10_G,Band_10_G,Band_10_G,Band_10_G,Band_10_Q,Band_10_Q,Band_No",
 									"template-switch-control": "Band10::Band10Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -3800,7 +3800,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_11_GQ,Band_11_Q,Band_11_Q,Band_11_No,Band_11_No,Band_11_GQ,Band_11_GQ,Band_11_G,Band_11_G,Band_11_G,Band_11_G,Band_11_Q,Band_11_Q",
+									"template-names": "Band_11_GQ,Band_11_Q,Band_11_Q,Band_No,Band_No,Band_11_GQ,Band_11_GQ,Band_11_G,Band_11_G,Band_11_G,Band_11_G,Band_11_Q,Band_11_Q,Band_No",
 									"template-switch-control": "Band11::Band11Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -3968,7 +3968,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_12_GQ,Band_12_Q,Band_12_Q,Band_12_No,Band_12_No,Band_12_GQ,Band_12_GQ,Band_12_G,Band_12_G,Band_12_G,Band_12_G,Band_12_Q,Band_12_Q",
+									"template-names": "Band_12_GQ,Band_12_Q,Band_12_Q,Band_No,Band_No,Band_12_GQ,Band_12_GQ,Band_12_G,Band_12_G,Band_12_G,Band_12_G,Band_12_Q,Band_12_Q,Band_No",
 									"template-switch-control": "Band12::Band12Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -4136,7 +4136,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_13_GQ,Band_13_Q,Band_13_Q,Band_13_No,Band_13_No,Band_13_GQ,Band_13_GQ,Band_13_G,Band_13_G,Band_13_G,Band_13_G,Band_13_Q,Band_13_Q",
+									"template-names": "Band_13_GQ,Band_13_Q,Band_13_Q,Band_No,Band_No,Band_13_GQ,Band_13_GQ,Band_13_G,Band_13_G,Band_13_G,Band_13_G,Band_13_Q,Band_13_Q,Band_No",
 									"template-switch-control": "Band13::Band13Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -4304,7 +4304,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_14_GQ,Band_14_Q,Band_14_Q,Band_14_No,Band_14_No,Band_14_GQ,Band_14_GQ,Band_14_G,Band_14_G,Band_14_G,Band_14_G,Band_14_Q,Band_14_Q",
+									"template-names": "Band_14_GQ,Band_14_Q,Band_14_Q,Band_No,Band_No,Band_14_GQ,Band_14_GQ,Band_14_G,Band_14_G,Band_14_G,Band_14_G,Band_14_Q,Band_14_Q,Band_No",
 									"template-switch-control": "Band14::Band14Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -4472,7 +4472,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_15_GQ,Band_15_Q,Band_15_Q,Band_15_No,Band_15_No,Band_15_GQ,Band_15_GQ,Band_15_G,Band_15_G,Band_15_G,Band_15_G,Band_15_Q,Band_15_Q",
+									"template-names": "Band_15_GQ,Band_15_Q,Band_15_Q,Band_No,Band_No,Band_15_GQ,Band_15_GQ,Band_15_G,Band_15_G,Band_15_G,Band_15_G,Band_15_Q,Band_15_Q,Band_No",
 									"template-switch-control": "Band15::Band15Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -4640,7 +4640,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_16_GQ,Band_16_Q,Band_16_Q,Band_16_No,Band_16_No,Band_16_GQ,Band_16_GQ,Band_16_G,Band_16_G,Band_16_G,Band_16_G,Band_16_Q,Band_16_Q",
+									"template-names": "Band_16_GQ,Band_16_Q,Band_16_Q,Band_No,Band_No,Band_16_GQ,Band_16_GQ,Band_16_G,Band_16_G,Band_16_G,Band_16_G,Band_16_Q,Band_16_Q,Band_No",
 									"template-switch-control": "Band16::Band16Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -4808,7 +4808,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_17_GQ,Band_17_Q,Band_17_Q,Band_17_No,Band_17_No,Band_17_GQ,Band_17_GQ,Band_17_G,Band_17_G,Band_17_G,Band_17_G,Band_17_Q,Band_17_Q",
+									"template-names": "Band_17_GQ,Band_17_Q,Band_17_Q,Band_No,Band_No,Band_17_GQ,Band_17_GQ,Band_17_G,Band_17_G,Band_17_G,Band_17_G,Band_17_Q,Band_17_Q,Band_No",
 									"template-switch-control": "Band17::Band17Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -4976,7 +4976,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_18_GQ,Band_18_Q,Band_18_Q,Band_18_No,Band_18_No,Band_18_GQ,Band_18_GQ,Band_18_G,Band_18_G,Band_18_G,Band_18_G,Band_18_Q,Band_18_Q",
+									"template-names": "Band_18_GQ,Band_18_Q,Band_18_Q,Band_No,Band_No,Band_18_GQ,Band_18_GQ,Band_18_G,Band_18_G,Band_18_G,Band_18_G,Band_18_Q,Band_18_Q,Band_No",
 									"template-switch-control": "Band18::Band18Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -5144,7 +5144,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_19_GQ,Band_19_Q,Band_19_Q,Band_19_No,Band_19_No,Band_19_GQ,Band_19_GQ,Band_19_G,Band_19_G,Band_19_G,Band_19_G,Band_19_Q,Band_19_Q",
+									"template-names": "Band_19_GQ,Band_19_Q,Band_19_Q,Band_No,Band_No,Band_19_GQ,Band_19_GQ,Band_19_G,Band_19_G,Band_19_G,Band_19_G,Band_19_Q,Band_19_Q,Band_No",
 									"template-switch-control": "Band19::Band19Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -5312,7 +5312,7 @@
 									"opacity": "1",
 									"origin": "0, 75",
 									"size": "80, 45",
-									"template-names": "Band_20_GQ,Band_20_Q,Band_20_Q,Band_20_No,Band_20_No,Band_20_GQ,Band_20_GQ,Band_20_G,Band_20_G,Band_20_G,Band_20_G,Band_20_Q,Band_20_Q",
+									"template-names": "Band_20_GQ,Band_20_Q,Band_20_Q,Band_No,Band_No,Band_20_GQ,Band_20_GQ,Band_20_G,Band_20_G,Band_20_G,Band_20_G,Band_20_Q,Band_20_Q,Band_No",
 									"template-switch-control": "Band20::Band20Type",
 									"transparent": "false",
 									"wants-focus": "false"
@@ -5762,7 +5762,7 @@
 					}
 				}
 			},
-			"Band_1_No": {
+			"Band_No": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
 					"background-color-draw-style": "filled and stroked",
@@ -5964,19 +5964,6 @@
 					}
 				}
 			},
-			"Band_2_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
-				}
-			},
 			"Band_2_G": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
@@ -6164,19 +6151,6 @@
 							"wheel-inc-value": "0.1"
 						}
 					}
-				}
-			},
-			"Band_3_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
 				}
 			},
 			"Band_3_G": {
@@ -6368,19 +6342,6 @@
 					}
 				}
 			},
-			"Band_4_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
-				}
-			},
 			"Band_4_G": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
@@ -6568,19 +6529,6 @@
 							"wheel-inc-value": "0.1"
 						}
 					}
-				}
-			},
-			"Band_5_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
 				}
 			},
 			"Band_5_G": {
@@ -6772,19 +6720,6 @@
 					}
 				}
 			},
-			"Band_6_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
-				}
-			},
 			"Band_6_G": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
@@ -6972,19 +6907,6 @@
 							"wheel-inc-value": "0.1"
 						}
 					}
-				}
-			},
-			"Band_7_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
 				}
 			},
 			"Band_7_G": {
@@ -7176,19 +7098,6 @@
 					}
 				}
 			},
-			"Band_8_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
-				}
-			},
 			"Band_8_G": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
@@ -7376,19 +7285,6 @@
 							"wheel-inc-value": "0.1"
 						}
 					}
-				}
-			},
-			"Band_9_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
 				}
 			},
 			"Band_9_G": {
@@ -7580,19 +7476,6 @@
 					}
 				}
 			},
-			"Band_10_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
-				}
-			},
 			"Band_10_G": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
@@ -7780,19 +7663,6 @@
 							"wheel-inc-value": "0.1"
 						}
 					}
-				}
-			},
-			"Band_11_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
 				}
 			},
 			"Band_11_G": {
@@ -7984,19 +7854,6 @@
 					}
 				}
 			},
-			"Band_12_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
-				}
-			},
 			"Band_12_G": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
@@ -8184,19 +8041,6 @@
 							"wheel-inc-value": "0.1"
 						}
 					}
-				}
-			},
-			"Band_13_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
 				}
 			},
 			"Band_13_G": {
@@ -8388,19 +8232,6 @@
 					}
 				}
 			},
-			"Band_14_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
-				}
-			},
 			"Band_14_G": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
@@ -8588,19 +8419,6 @@
 							"wheel-inc-value": "0.1"
 						}
 					}
-				}
-			},
-			"Band_15_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
 				}
 			},
 			"Band_15_G": {
@@ -8792,19 +8610,6 @@
 					}
 				}
 			},
-			"Band_16_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
-				}
-			},
 			"Band_16_G": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
@@ -8992,19 +8797,6 @@
 							"wheel-inc-value": "0.1"
 						}
 					}
-				}
-			},
-			"Band_17_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
 				}
 			},
 			"Band_17_G": {
@@ -9196,19 +8988,6 @@
 					}
 				}
 			},
-			"Band_18_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
-				}
-			},
 			"Band_18_G": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
@@ -9398,19 +9177,6 @@
 					}
 				}
 			},
-			"Band_19_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
-				}
-			},
 			"Band_19_G": {
 				"attributes": {
 					"background-color": "~ TransparentCColor",
@@ -9598,19 +9364,6 @@
 							"wheel-inc-value": "0.1"
 						}
 					}
-				}
-			},
-			"Band_20_No": {
-				"attributes": {
-					"background-color": "~ TransparentCColor",
-					"background-color-draw-style": "filled and stroked",
-					"class": "CViewContainer",
-					"mouse-enabled": "true",
-					"opacity": "1",
-					"origin": "0, 0",
-					"size": "80, 45",
-					"transparent": "false",
-					"wants-focus": "false"
 				}
 			},
 			"Band_20_G": {
