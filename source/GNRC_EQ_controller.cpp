@@ -774,11 +774,17 @@ tresult PLUGIN_API GNRC_EQ_Controller::initialize (FUnknown* context)
     
     flags = Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList;
     
-    auto* Band_Target = new Vst::StringListParameter(STR16("Target"), kParamTarget, STR16(""), flags);
+    auto* ParamTarget = new Vst::StringListParameter(STR16("Target"), kParamTarget, STR16(""), flags);
     for (int i = 0; i < OS_size; i++)
-        Band_Target->appendString(target_SR_names[i]);
-    Band_Target->getInfo().defaultNormalizedValue = 0.0;
-    parameters.addParameter(Band_Target);
+        ParamTarget->appendString(target_SR_names[i]);
+    ParamTarget->getInfo().defaultNormalizedValue = 0.0;
+    parameters.addParameter(ParamTarget);
+    
+    auto* ParamStereo = new Vst::StringListParameter(STR16("Stereo"), kParamStereo, STR16(""), flags);
+    for (int i = 0; i < ST_size; i++)
+        ParamStereo->appendString(ST_names[i]);
+    ParamStereo->getInfo().defaultNormalizedValue = nrmParamStro;
+    parameters.addParameter(ParamStereo);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -963,6 +969,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     Vst::ParamValue savedLevel  = 0.0;
     int32           savedPhase  = 0;
     int32           savedTarget = 0;
+    int32           savedStereo = 0;
     
     bandParamSet savedBand[numBands];
     xovrParamSet savedXovr[numXover];
@@ -972,6 +979,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     if (streamer.readDouble(savedLevel ) == false) return kResultFalse;
     if (streamer.readInt32 (savedPhase ) == false) return kResultFalse;
     if (streamer.readInt32 (savedTarget) == false) return kResultFalse;
+    if (streamer.readInt32 (savedStereo) == false) return kResultFalse;
 
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -996,6 +1004,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     fLevel  = paramLevl.ToNormalized(savedLevel);
     bPhase  = savedPhase > 0;
     fTarget = paramTrgt.ToNormalized(savedTarget);
+    fStereo = paramStro.ToNormalized(savedStereo);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1020,6 +1029,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setComponentState (IBStream* state)
     setParamNormalized(kParamLevel,  fLevel);
     setParamNormalized(kParamPhase,  bPhase ? 1 : 0);
     setParamNormalized(kParamTarget, fTarget);
+    setParamNormalized(kParamStereo, fStereo);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1056,6 +1066,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     Vst::ParamValue savedLevel  = 0.0;
     int32           savedPhase  = 0;
     int32           savedTarget = 0;
+    int32           savedStereo = 0;
     
     bandParamSet savedBand[numBands];
     xovrParamSet savedXovr[numBands];
@@ -1064,6 +1075,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     if (streamer.readDouble(savedLevel ) == false) savedLevel = fLevel;
     if (streamer.readInt32 (savedPhase ) == false) return kResultFalse;
     if (streamer.readInt32 (savedTarget) == false) return kResultFalse;
+    if (streamer.readInt32 (savedStereo) == false) return kResultFalse;
 
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1087,6 +1099,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     fLevel  = paramLevl.ToNormalized(savedLevel);;
     bPhase  = savedPhase > 0;
     fTarget = paramTrgt.ToNormalized(savedTarget);
+    fStereo = paramStro.ToNormalized(savedStereo);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1110,6 +1123,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::setState (IBStream* state)
     setParamNormalized(kParamLevel, fLevel);
     setParamNormalized(kParamPhase, bPhase ? 1 : 0);
     setParamNormalized(kParamTarget, fTarget);
+    setParamNormalized(kParamStereo, fStereo);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1146,6 +1160,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
     fLevel  = getParamNormalized(kParamLevel);
     bPhase  = getParamNormalized(kParamPhase);
     fTarget = getParamNormalized(kParamTarget);
+    fStereo = getParamNormalized(kParamStereo);
 
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -1168,6 +1183,7 @@ tresult PLUGIN_API GNRC_EQ_Controller::getState (IBStream* state)
     streamer.writeDouble(paramLevl.ToPlain(fLevel));
     streamer.writeInt32(bPhase ? 1 : 0);
     streamer.writeInt32(paramTrgt.ToPlainList(fTarget));
+    streamer.writeInt32(paramStro.ToPlainList(fStereo));
 
     for (int bands = 0; bands < numBands; bands++)
     {

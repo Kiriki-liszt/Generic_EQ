@@ -310,7 +310,7 @@ public:
             case tHighPass_6    : m0 = 1;       m1 = 0;             m2 = 0;     break;
             case tLowShelf_6    : m0 = 1;       m1 = 0;             m2 = A * A; break; // fc at -3dB
             case tHighShelf_6   : m0 = A * A;   m1 = 0;             m2 = 1;     break; // fc at -3dB
-            case tAllPass_6     : m0 = -1;      m1 = 0;             m2 = 1;    break; // add LP6 and flipped HP6 to get AP6
+            case tAllPass_6     : m0 = -1;      m1 = 0;             m2 = 1;     break; // add LP6 and flipped HP6 to get AP6
  
             default: break;
         }
@@ -983,6 +983,17 @@ static SMTG_CONSTEXPR int32 latency_fir_x8 = (fir_x8_size - 1) / 16;
 static SMTG_CONSTEXPR int32 fir_taps   [OS_size] = {   fir_x1_size,    fir_x2_size,    fir_x4_size,    fir_x8_size};
 static SMTG_CONSTEXPR int32 latency_fir[OS_size] = {latency_fir_x1, latency_fir_x2, latency_fir_x4, latency_fir_x8};
 
+static SMTG_CONSTEXPR int ST_ST   = 0;
+static SMTG_CONSTEXPR int ST_L    = 1;
+static SMTG_CONSTEXPR int ST_R    = 2;
+static SMTG_CONSTEXPR int ST_num  = 2;
+static SMTG_CONSTEXPR int ST_size = 3;
+static constexpr Steinberg::tchar* ST_names[ST_size] = {
+    (Steinberg::tchar*)STR16("All channels"),
+    (Steinberg::tchar*)STR16("CH 1 [Left]"),
+    (Steinberg::tchar*)STR16("CH 2 [Right]")
+};
+
 static SMTG_CONSTEXPR bool dftBypass          = false;
 
 static SMTG_CONSTEXPR ParamValue minParamFreq = 20.0;
@@ -1030,6 +1041,7 @@ static SMTG_CONSTEXPR ParamValue maxParamQlty = 50.0;
 static SMTG_CONSTEXPR ParamValue dftParamQlty = M_SQRT1_2;
 
 static SMTG_CONSTEXPR int32      dftParamUsed = 0.0;
+static SMTG_CONSTEXPR int32      dftParamStro = ST_ST;
 static SMTG_CONSTEXPR int32      dftParamType = SVF_Generic::tBell;
 static SMTG_CONSTEXPR int32      dftParamPass = SVF_xover::pLow;
 static SMTG_CONSTEXPR int32      dftParamXtyp = SVF_xover::tButterworth;
@@ -1058,6 +1070,7 @@ static const ParameterConverter paramGain      (minParamGain, maxParamGain, Para
 static const ParameterConverter paramLevl      (minParamLevl, maxParamLevl, ParameterConverter::range);
 static const ParameterConverter paramFreq      (minParamFreq, maxParamFreq, ParameterConverter::log);
 static const ParameterConverter paramQlty      (minParamQlty, maxParamQlty, ParameterConverter::log);
+static const ParameterConverter paramStro      (0,            0,            ParameterConverter::list, ST_num);
 static const ParameterConverter paramTrgt      (0,            0,            ParameterConverter::list, OS_num);
 static const ParameterConverter paramType      (0,            0,            ParameterConverter::list, SVF_Generic::tNum);
 static const ParameterConverter paramPass      (0,            0,            ParameterConverter::list, SVF_xover::pNum);
@@ -1088,7 +1101,8 @@ static const double nrmBand20Freq = paramFreq.ToNormalized(dftBand20Freq);
 static const double nrmParamGain = paramGain.ToNormalized(dftParamGain);
 static const double nrmParamLevl = paramLevl.ToNormalized(dftParamLevl);
 static const double nrmParamQlty = paramQlty.ToNormalized(dftParamQlty);
-static const double nrmParamType = paramQlty.ToNormalizedList(dftParamType);
+static const double nrmParamStro = paramStro.ToNormalizedList(dftParamStro);
+static const double nrmParamType = paramType.ToNormalizedList(dftParamType);
 static const double nrmParamPass = paramPass.ToNormalizedList(dftParamPass);
 static const double nrmParamXtyp = paramXtyp.ToNormalizedList(dftParamXtyp);
 static const double nrmParamOrdr = paramOrdr.ToNormalizedList(dftParamOrdr);

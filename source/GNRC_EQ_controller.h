@@ -225,6 +225,7 @@ protected:
     TBool      bPhase  = false;
     ParamValue fTarget = OS_1x;
     ParamValue fZoom   = 2.0 / 6.0;
+    ParamValue fStereo = ST_ST;
     
     std::array<std::array<double, bandSize>, numBands> pBand = {{
         {dftParamUsed, nrmParamType, dftBand01Freq, dftParamGain, dftParamQlty},

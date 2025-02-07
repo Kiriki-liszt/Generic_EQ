@@ -63,6 +63,16 @@ tresult PLUGIN_API GNRC_EQ_Processor::terminate ()
     return AudioEffect::terminate ();
 }
 
+//-----------------------------------------------------------------------------
+tresult PLUGIN_API GNRC_EQ_Processor::setBusArrangements (Steinberg::Vst::SpeakerArrangement* inputs,  int32 numIns,
+                                                          Steinberg::Vst::SpeakerArrangement* outputs, int32 numOuts)
+{
+    // we only support one in and output bus and these busses must have the same number of channels
+    if (numIns == 1 && numOuts == 1 && inputs[0] == outputs[0])
+        return AudioEffect::setBusArrangements (inputs, numIns, outputs, numOuts);
+    return kResultFalse;
+}
+
 //------------------------------------------------------------------------
 tresult PLUGIN_API GNRC_EQ_Processor::setActive (TBool state)
 {
@@ -102,6 +112,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
                         // case kParamZoom:   fZoom = value; break;
                         case kParamLevel:   fLevel = value; break;
                         case kParamPhase:   bPhase = (value > 0.5f); break;
+                        case kParamStereo:  fStereo = value; break;
                         case kParamTarget:
                             fTarget = value;
                             call_after_SR_changed ();
@@ -167,9 +178,20 @@ tresult PLUGIN_API GNRC_EQ_Processor::process (Vst::ProcessData& data)
     if (data.numInputs == 0 || data.numOutputs == 0)
         return kResultOk; // nothing to do
 
-    // (simplification) we suppose in this example that we have the same input channel count than
-    // the output
-    int32 numChannels = data.inputs[0].numChannels;
+    // (simplification) we suppose in this example that we have the same input channel count than the output
+    if (numChannels != data.inputs[0].numChannels)
+    {
+        Vst::SpeakerArrangement arr;
+        getBusArrangement (Vst::BusDirections::kInput, 0, arr);
+        numChannels = static_cast<uint16_t> (Vst::SpeakerArr::getChannelCount (arr));
+
+        svf.resize(numChannels);
+        svfXover.resize(numChannels);
+        latencyDelayLine.resize(numChannels);
+        OS_buff.resize(numChannels);
+        
+        call_after_SR_changed (); // includes call_after_parameter_changed ()
+    }
 
     //---get audio buffers----------------
     uint32 sampleFramesSize = getSampleFramesSizeInBytes(processSetup, data.numSamples);
@@ -240,7 +262,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setupProcessing (Vst::ProcessSetup& newSet
     Vst::SpeakerArrangement arr;
     getBusArrangement (Vst::BusDirections::kInput, 0, arr);
     numChannels = static_cast<uint16_t> (Vst::SpeakerArr::getChannelCount (arr));
-    
+
     svf.resize(numChannels);
     svfXover.resize(numChannels);
     latencyDelayLine.resize(numChannels);
@@ -279,6 +301,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     Vst::ParamValue savedLevel  = 0.0;
     int32           savedPhase  = 0;
     int32           savedTarget = 0;
+    int32           savedStereo = 0;
     
     bandParamSet savedBand[numBands];
     xovrParamSet savedXovr[numXover];
@@ -288,6 +311,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     if (streamer.readDouble(savedLevel ) == false) return kResultFalse;
     if (streamer.readInt32 (savedPhase ) == false) return kResultFalse;
     if (streamer.readInt32 (savedTarget) == false) return kResultFalse;
+    if (streamer.readInt32 (savedStereo) == false) return kResultFalse;
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -312,6 +336,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::setState (IBStream* state)
     fLevel  = paramLevl.ToNormalized(savedLevel);
     bPhase  = savedPhase > 0;
     fTarget = paramTrgt.ToNormalized(savedTarget);
+    fStereo = paramStro.ToNormalized(savedStereo);
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -349,6 +374,7 @@ tresult PLUGIN_API GNRC_EQ_Processor::getState (IBStream* state)
     streamer.writeDouble(paramLevl.ToPlain(fLevel));
     streamer.writeInt32(bPhase ? 1 : 0);
     streamer.writeInt32(paramTrgt.ToPlainList(fTarget));
+    streamer.writeInt32(paramStro.ToPlainList(fStereo));
     
     for (int bands = 0; bands < numBands; bands++)
     {
@@ -436,6 +462,11 @@ void GNRC_EQ_Processor::processSVF
 
             if (bBypass)
                 inputSample = drySample;
+            
+            if (paramStro.ToPlainList(fStereo) == ST_L && channel != 0)
+                inputSample = drySample;
+            if (paramStro.ToPlainList(fStereo) == ST_R && channel != 1)
+                inputSample = drySample;
 
             outputs[channel][samples] = (SampleType)inputSample;
 
@@ -471,6 +502,15 @@ void GNRC_EQ_Processor::call_after_SR_changed ()
     
     for (auto& it : latencyDelayLine)
         it.resize(currLatency, 0.0);
+    
+    for (auto& it : svf)
+        for (auto& itit : it)
+            itit.initSVF();
+    
+    for (auto& it : svfXover)
+        for (auto& itit : it)
+            itit.initXover();
+    
     Steinberg::Vst::IMessage* message = allocateMessage();
     if (message)
     {

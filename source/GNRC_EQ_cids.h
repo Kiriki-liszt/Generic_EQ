@@ -21,6 +21,7 @@ enum {
 	kParamLevel,
     kParamPhase,
     kParamTarget,
+    kParamStereo,
 
 	kParamBand01_Used, kParamBand01_Type, kParamBand01_Freq, kParamBand01_Gain, kParamBand01_Qlty,
     kParamBand02_Used, kParamBand02_Type, kParamBand02_Freq, kParamBand02_Gain, kParamBand02_Qlty,

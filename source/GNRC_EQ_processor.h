@@ -38,6 +38,11 @@ public:
     /** Called at the end before destructor */
     Steinberg::tresult PLUGIN_API terminate () SMTG_OVERRIDE;
     
+    Steinberg::tresult PLUGIN_API setBusArrangements (Steinberg::Vst::SpeakerArrangement* inputs,
+                                                      Steinberg::int32 numIns,
+                                                      Steinberg::Vst::SpeakerArrangement* outputs,
+                                                      Steinberg::int32 numOuts) SMTG_OVERRIDE;
+    
     /** Switch the Plug-in on/off */
     Steinberg::tresult PLUGIN_API setActive (Steinberg::TBool state) SMTG_OVERRIDE;
     
@@ -77,6 +82,7 @@ protected:
     ParamValue fLevel  = nrmParamLevl;
     bool       bPhase  = false;
     // ParamValue fZoom   = 2.0 / 6.0; // UNUSED
+    ParamValue fStereo = nrmParamStro;
     
     // store in Norm Value
     std::array<std::array<ParamValue, bandSize>, numBands> pBand = {{
@@ -117,7 +123,7 @@ protected:
     
     // Oversampling and Latency
     int32      fParamOS = OS_1x; // Internal
-    ParamValue fTarget = OS_1x;  // External Parameter
+    ParamValue fTarget  = OS_1x; // External Parameter
     std::vector<std::deque<ParamValue>> latencyDelayLine;    // vector size = numChannels
     std::array<ParamValue, Kaiser::maxTap> OS_coef;
     std::vector<std::array<ParamValue, Kaiser::maxTap>> OS_buff; // vector size = numChannels
