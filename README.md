@@ -2,6 +2,10 @@
 
 <img src="https://github.com/Kiriki-liszt/Generic_EQ/blob/main/screenshot.png?raw=true"  width="600"/>  
 
+[![GitHub Release](https://img.shields.io/github/v/release/kiriki-liszt/Generic_EQ?style=flat-square&label=Get%20latest%20Release)](https://github.com/Kiriki-liszt/Generic_EQ/releases/latest)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/kiriki-liszt/Generic_EQ/total?style=flat-square&label=total%20downloads&color=blue)](https://tooomm.github.io/github-release-stats/?username=Kiriki-liszt&repository=Generic_EQ)  
+[![Static Badge](https://img.shields.io/badge/coffee%20maybe%3F%20%3D%5D%20-gray?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/kirikiaris)  
+
 Generic EQ is a minimum phase EQ for REW Auto EQ - Generic type.  
 
 Runs in double precision 64-bit internal processing. Also double precision input / output if supported.  
@@ -30,15 +34,6 @@ You can target specific sampling rate with dynamic oversampling, but REW EQ is j
 Exact gain-q dependency to match REW EQ's curve.  
 
 Statefull filter design for better numerical stability.  
-
-Runs in double precision 64-bit internal processing. Also double precision input / output if supported.  
-
-Windows and Mac, VST3 and AU.  
-
-[![GitHub Release](https://img.shields.io/github/v/release/kiriki-liszt/Generic_EQ?style=flat-square&label=Get%20latest%20Release)](https://github.com/Kiriki-liszt/Generic_EQ/releases/latest)
-[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/kiriki-liszt/Generic_EQ/total?style=flat-square&label=total%20downloads&color=blue)](https://tooomm.github.io/github-release-stats/?username=Kiriki-liszt&repository=Generic_EQ)  
-
-[![Static Badge](https://img.shields.io/badge/coffee%20maybe%3F%20%3D%5D%20-gray?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/kirikiaris)  
 
 ## Compatibility  
 
